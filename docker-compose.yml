@@ -1,0 +1,49 @@
+version: '3.4'
+services:
+
+  master:
+    build:
+      context: ./
+      dockerfile: docker/images/master/Dockerfile
+    image: y.mykhailiv/cee-master
+    container_name: master
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: master
+      SERVICE_TAGS: dev
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./master:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+  runner:
+    build:
+      context: ./
+      dockerfile: docker/images/runner/Dockerfile
+    image: y.mykhailiv/cee-runner
+    container_name: runner
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: runner
+      SERVICE_TAGS: dev
+    working_dir: /app
+    ports:
+      - "4000:3000"
+    volumes:
+      - ./runner:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
