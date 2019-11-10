@@ -1,0 +1,64 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="methodCall">
+        <xs:complexType>
+            <xs:all>
+
+                <xs:element name="methodName">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="available"/>
+                            <xs:enumeration value="request"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+
+                <xs:element name="params">
+                    <xs:complexType>
+                        <xs:all>
+
+                            <xs:element name="param">
+                                <xs:complexType>
+                                    <xs:all>
+
+                                        <xs:element name="value">
+                                            <xs:complexType>
+                                                <xs:all>
+
+                                                    <xs:element name="struct">
+                                                        <xs:complexType>
+                                                            <xs:sequence>
+
+                                                                <xs:element name="member" maxOccurs="unbounded">
+                                                                    <xs:complexType>
+                                                                        <xs:all>
+
+                                                                            <xs:element name="name" type="xs:string" />
+
+                                                                            <xs:element name="value" type="xs:anyType" />
+
+                                                                        </xs:all>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+
+                                                            </xs:sequence>
+                                                        </xs:complexType>
+                                                    </xs:element>
+
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

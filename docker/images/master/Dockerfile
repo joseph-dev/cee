@@ -1,5 +1,5 @@
 # Building stage
-FROM node:10-alpine
+FROM node:10-slim
 
 # Set working directory
 WORKDIR /app
@@ -11,7 +11,6 @@ RUN npm install -g nodemon
 
 # Install dependencies
 RUN npm install
-
 # Copy existing application directory contents
 COPY ./master /app
 
