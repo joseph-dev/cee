@@ -14,11 +14,15 @@ const analyzeJsonRequest = require('./jobs/request/analyzeJsonRequest')
 // parse an XML body into a string
 app.use(bodyParser.text({ type: 'application/xml' }))
 
+// parse json
+app.use(bodyParser.json({ type: 'application/json' }))
+
 // Basic route for checking if the service is up
 app.get('/OK', (req, res) => res.send('OK!'))
 
+
 // Main endpoint
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
 
   let requestData = {}
   let contentTypeIsXml = (req.headers['content-type'] || '').toLowerCase() === 'application/xml'
@@ -26,10 +30,11 @@ app.post('/', (req, res) => {
   if (contentTypeIsXml) {
     requestData = analyzeXmlRequest(req.body)
   } else {
-    requestData = analyzeJsonRequest(req.body)
+    requestData = await analyzeJsonRequest(req.body)
   }
 
   if (! requestData.isValid) {
+    res.status(400)
     res.send(requestData.errors)
     return
   }
