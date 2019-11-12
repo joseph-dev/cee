@@ -35,13 +35,11 @@ module.exports = function (xmlDoc){
   return response
 }
 
-// Helper for getting value of simple params
+// Helper for getting value of params
 function getMemberValue(members, memberName, type = 'string') {
   let returnValue
 
-  for (let memberIndex in members) {
-    let member = members[memberIndex]
-
+  for (let [memberIndex, member] of Object.entries(members)) {
     if (member.name() === 'member' && member.get('name').text() === memberName) {
       returnValue = member.get('value/' + type)
 
