@@ -6,6 +6,13 @@ module.exports = (data) => {
 
   redis.hSetAsync('execRequests', executionId, JSON.stringify(data))
 
-  return {executionId: executionId}
+  // @TODO add real values
+  return {
+    adminTicket: executionId,
+    monitorTicket: executionId,
+    executionTicket: executionId,
+    port: 80,
+    securePort: 443,
+  }
 
 }

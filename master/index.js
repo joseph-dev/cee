@@ -1,6 +1,7 @@
 const http = require('http')
 const express = require('express')
 const bodyParser = require('body-parser')
+const path = require('path')
 
 // Other imports
 const analyzeXmlRequest = require('./jobs/request/analyzeXmlRequest')
@@ -19,6 +20,10 @@ app.use(bodyParser.text({ type: 'application/xml' }))
 
 // parse json
 app.use(bodyParser.json({ type: 'application/json' }))
+
+// set view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '/responses'));
 
 
 // Basic route for checking if the service is up
@@ -47,7 +52,13 @@ app.post('/', async (req, res) => {
   // Process the request
   let commandResult = execCommand(requestData.body)
 
-  res.send(commandResult)
+  // send proper response
+  if (contentTypeIsXml) {
+    res.setHeader('content-type', 'text/xml');
+    res.render(`xml/${requestData.body.command}`, commandResult)
+  } else {
+    res.send(commandResult)
+  }
 
 })
 
