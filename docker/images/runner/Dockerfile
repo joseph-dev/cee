@@ -15,6 +15,6 @@ RUN npm install
 # Copy existing application directory contents
 COPY ./runner /app
 
-EXPOSE 3000
+EXPOSE 4000
 
 CMD [ "node", "index.js" ]

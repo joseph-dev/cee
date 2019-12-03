@@ -66,7 +66,7 @@ function extractFiles (members) {
 
   return _.map(members, (member) => {
     return {
-      fileName: member.get('name').text(),
+      name: member.get('name').text(),
       content: member.get('value/string').text(),
     }
   })
