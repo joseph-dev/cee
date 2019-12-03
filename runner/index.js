@@ -45,13 +45,29 @@ app.post('/execute/:executionId', async (req, res) => {
 
     // change dir to where the files are and execute the needed files
     sh.cd(folderPath)
+
+    if (! sh.test('-e', params.execute)) {
+      throw new Error(`File "${params.execute}" doesn't exist`)
+    }
     sh.chmod('u+x', params.execute)
     sh.exec('./' + params.execute)
-    response.output = sh.exec('./vpl_execution').stdout
+
+    if (! sh.test('-e', 'vpl_execution')) {
+      throw new Error(`File "vpl_execution" doesn't exist`)
+    }
+    const finalResult = sh.exec('./vpl_execution')
+
+    if (finalResult.stdout) {
+      response.output = finalResult.stdout
+    }
+
+    if (finalResult.stderr) {
+      response.output = finalResult.stderr
+    }
 
   } catch (e) {
 
-    response.success = false
+    response.success = false // @TODO process exception properly
 
   } finally {
 
