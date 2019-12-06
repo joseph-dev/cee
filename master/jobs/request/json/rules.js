@@ -17,7 +17,7 @@ module.exports = {
     files: {
       type: Array,
       schema: {
-        fileName: {type: String, required: true},
+        name: {type: String, required: true},
         content: {type: String, required: true}
       }
     }

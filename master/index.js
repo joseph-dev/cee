@@ -45,7 +45,13 @@ app.post('/', async (req, res) => {
   // Check if the request is valid, if it's not return the found errors
   if (! requestData.isValid) {
     res.status(400)
-    res.send(requestData.errors)
+
+    if (contentTypeIsXml) {
+      res.render(`html/badRequest`, {error: requestData.errors[0]})
+    } else {
+      res.send(requestData.errors)
+    }
+
     return
   }
 
