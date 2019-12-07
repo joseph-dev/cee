@@ -19,7 +19,7 @@ executionWss.on('connection', async (ws) => {
   ws.on('error', (error) => {console.log(error)})
 
   // make a request to execute the code
-  axios.post(`http://runner/execute/${ws.payload.executionId}`)
+  axios.post(`http://${ws.payload.runner}-runner/execute/${ws.payload.executionId}`)
     .then((response) => {
       ws.send(response.data.output)
     })

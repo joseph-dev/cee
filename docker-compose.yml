@@ -29,6 +29,7 @@ services:
     environment:
       SERVICE_NAME: master
       SERVICE_TAGS: dev
+      RUNNERS: php7.1, php7.2, java8, java12
     working_dir: /app
     ports:
       - "3000:3000"
@@ -49,6 +50,82 @@ services:
     tty: true
     environment:
       SERVICE_NAME: runner
+      SERVICE_TAGS: dev
+    working_dir: /app
+    volumes:
+      - ./runner:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+  php7.1-runner:
+    build:
+      context: ./
+      dockerfile: docker/images/runner/php/7.1/Dockerfile
+    image: y.mykhailiv/cee-php7.1-runner
+    container_name: php7.1-runner
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: php7.1-runner
+      SERVICE_TAGS: dev
+    working_dir: /app
+    volumes:
+      - ./runner:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+  php7.2-runner:
+    build:
+      context: ./
+      dockerfile: docker/images/runner/php/7.2/Dockerfile
+    image: y.mykhailiv/cee-php7.2-runner
+    container_name: php7.2-runner
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: php7.2-runner
+      SERVICE_TAGS: dev
+    working_dir: /app
+    volumes:
+      - ./runner:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+  java8-runner:
+    build:
+      context: ./
+      dockerfile: docker/images/runner/java/8/Dockerfile
+    image: y.mykhailiv/cee-java8-runner
+    container_name: java8-runner
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: java8-runner
+      SERVICE_TAGS: dev
+    working_dir: /app
+    volumes:
+      - ./runner:/app
+      - /app/node_modules/
+    networks:
+      - app-network
+    command: nodemon --watch ./ -e js,html index.js
+
+  java12-runner:
+    build:
+      context: ./
+      dockerfile: docker/images/runner/java/12/Dockerfile
+    image: y.mykhailiv/cee-java12-runner
+    container_name: java12-runner
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: java12-runner
       SERVICE_TAGS: dev
     working_dir: /app
     volumes:

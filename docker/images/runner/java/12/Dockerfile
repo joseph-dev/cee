@@ -1,6 +1,5 @@
 # Building stage
 FROM ubuntu:18.04
-#FROM node:10-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -9,6 +8,13 @@ WORKDIR /app
 
 # Copy dependency files
 COPY runner/package*.json /app/
+
+# Install container specific packages
+RUN apt update \
+    && apt install -y software-properties-common \
+    && add-apt-repository -y ppa:openjdk-r/ppa \
+    && apt update \
+    && apt -y install openjdk-12-jdk
 
 # Install NodeJS
 RUN apt update \

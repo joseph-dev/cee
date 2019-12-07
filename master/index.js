@@ -8,6 +8,7 @@ const analyzeXmlRequest = require('./jobs/request/analyzeXmlRequest')
 const analyzeJsonRequest = require('./jobs/request/analyzeJsonRequest')
 const execCommand = require('./jobs/command/execCommand')
 const upgradeRequest = require('./upgradeRequest')
+const runners = require('./runners')
 
 // Create the app
 const app = express()
@@ -30,7 +31,12 @@ app.set('views', path.join(__dirname, '/responses'));
 app.get('/OK', (req, res) => res.send('OK!'))
 
 // Main endpoint
-app.post('/', async (req, res) => {
+app.post('/:runner', async (req, res) => {
+
+  if (! req.params.runner || ! runners.includes(req.params.runner)) {
+    res.sendStatus(404)
+    return
+  }
 
   let requestData = {}
   let contentTypeIsXml = (req.headers['content-type'] || '').toLowerCase() === 'application/xml'
@@ -56,6 +62,7 @@ app.post('/', async (req, res) => {
   }
 
   // Process the request
+  requestData.body.params.runner = req.params.runner
   let commandResult = execCommand(requestData.body)
 
   // send proper response
@@ -66,6 +73,11 @@ app.post('/', async (req, res) => {
     res.send(commandResult)
   }
 
+})
+
+// Process requests to wrong urls
+app.use((req, res, next) => {
+  res.sendStatus(404)
 })
 
 
