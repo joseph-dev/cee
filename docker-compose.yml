@@ -22,7 +22,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/master/Dockerfile
-    image: y.mykhailiv/cee-master
+    image: yosypmykhailiv/cee-master
     container_name: master
     restart: unless-stopped
     tty: true
@@ -44,7 +44,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/runner/Dockerfile
-    image: y.mykhailiv/cee-runner
+    image: yosypmykhailiv/cee-runner
     container_name: runner
     restart: unless-stopped
     tty: true
@@ -63,7 +63,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/runner/php/7.1/Dockerfile
-    image: y.mykhailiv/cee-php7.1-runner
+    image: yosypmykhailiv/cee-runner:php7.1
     container_name: php7.1-runner
     restart: unless-stopped
     tty: true
@@ -82,7 +82,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/runner/php/7.2/Dockerfile
-    image: y.mykhailiv/cee-php7.2-runner
+    image: yosypmykhailiv/cee-runner:php7.2
     container_name: php7.2-runner
     restart: unless-stopped
     tty: true
@@ -101,7 +101,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/runner/java/8/Dockerfile
-    image: y.mykhailiv/cee-java8-runner
+    image: yosypmykhailiv/cee-runner:java8
     container_name: java8-runner
     restart: unless-stopped
     tty: true
@@ -120,7 +120,7 @@ services:
     build:
       context: ./
       dockerfile: docker/images/runner/java/12/Dockerfile
-    image: y.mykhailiv/cee-java12-runner
+    image: yosypmykhailiv/cee-runner:java12
     container_name: java12-runner
     restart: unless-stopped
     tty: true
