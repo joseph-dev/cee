@@ -1,6 +1,4 @@
-# Building stage
 FROM ubuntu:18.04
-#FROM node:10-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -16,14 +14,8 @@ RUN apt update \
     && curl -sL https://deb.nodesource.com/setup_10.x | bash \
     && apt -y install nodejs
 
-RUN npm install -g nodemon
-
 # Install dependencies
 RUN npm install
 
 # Copy existing application directory contents
 COPY ./runner /app
-
-EXPOSE 4000
-
-CMD [ "node", "index.js" ]

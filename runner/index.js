@@ -1,42 +1,26 @@
-const express = require('express')
-const bodyParser = require('body-parser')
 const sh = require('shelljs')
 const fs = require('fs')
-
-// Other imports
+const program = require('commander')
 const redis = require('./redis')
 
-// Create the app
-const app = express()
-const port = 80
+// Function for processing execution
+let execute = async (executionId) => {
 
-// parse json
-app.use(bodyParser.json({ type: 'application/json' }))
-
-// Main endpoint
-app.post('/execute/:executionId', async (req, res) => {
-
-  let response = {
+  let result = {
     success: true,
     output: ''
   }
 
-  let folderPath
+  let folderPath = sh.tempdir()
 
   try {
 
     // get params from Redis
-    const paramsJson = await redis.hGetAsync('execRequests', req.params.executionId);
+    const paramsJson = await redis.hGetAsync('execRequests', executionId)
     if (! paramsJson) {
       throw new Error(`Invalid request`)
     }
     const params = JSON.parse(paramsJson)
-
-    // create temp folder
-    folderPath = `${sh.tempdir()}/cee/${req.params.executionId}`
-    if (sh.mkdir('-p', folderPath).code !== 0) {
-      throw new Error(`Unable to create a folder with path "${folderPath}"`)
-    }
 
     // write all of the files
     for (let file of params.files) {
@@ -58,27 +42,35 @@ app.post('/execute/:executionId', async (req, res) => {
     const finalResult = sh.exec('./vpl_execution')
 
     if (finalResult.stdout) {
-      response.output = finalResult.stdout
+      result.output = finalResult.stdout
     }
 
     if (finalResult.stderr) {
-      response.output = finalResult.stderr
+      result.output = finalResult.stderr
     }
 
   } catch (e) {
 
-    response.success = false // @TODO process exception properly
+    result.success = false // @TODO add logging
 
   } finally {
 
-    // go back to the home dir and delete the folder with files
+    // delete unnecessary files and go back to the home dir
+    sh.rm('-rf', `${folderPath}/*`)
     sh.cd('/app')
-    sh.rm('-rf', folderPath)
-
+    redis.hset('execResults', executionId, JSON.stringify(result))
+    redis.quit()
   }
 
-  res.send(response)
+}
 
-})
+// Declare and parse cl parameters
+program.requiredOption("--execution-id <id>", "Execution ID", parseInt)
+program.parse(process.argv)
 
-app.listen(port, () => console.log(`Runner listening on port ${port}!`))
+if (isNaN(program.executionId)){
+  throw new Error(`Invalid value for '--execution-id'`)
+}
+
+// process
+execute(program.executionId)
