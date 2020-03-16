@@ -1,10 +1,13 @@
 ---
- apiVersion: apps/v1beta1
+ apiVersion: apps/v1
  kind: Deployment
  metadata:
    name: redis
  spec:
    replicas: 1
+   selector:
+     matchLabels:
+       app: redis
    template:
      metadata:
        labels:
@@ -17,12 +20,15 @@
              - containerPort: 6379
 
 ---
- apiVersion: apps/v1beta1
+ apiVersion: apps/v1
  kind: Deployment
  metadata:
    name: redis-commander
  spec:
    replicas: 1
+   selector:
+     matchLabels:
+       app: redis-commander
    template:
      metadata:
        labels:
@@ -38,12 +44,15 @@
              - containerPort: 8081
 
 ---
- apiVersion: apps/v1beta1
+ apiVersion: apps/v1
  kind: Deployment
  metadata:
    name: master
  spec:
    replicas: 1
+   selector:
+     matchLabels:
+       app: master
    template:
      metadata:
        labels:
@@ -85,7 +94,6 @@
  spec:
    selector:
      app: redis-commander
-   type: LoadBalancer
    ports:
      - protocol: TCP
        port: 8081
@@ -102,5 +110,39 @@
    type: LoadBalancer
    ports:
      - protocol: TCP
-       port: 3000
+       port: 80
        targetPort: 3000
+
+
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-handler
+  namespace: default
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "pods", "services"]
+    verbs: [ "get", "list", "watch"]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments" ]
+    verbs: [ "get", "list", "watch"]
+  - apiGroups: [ "batch" ]
+    resources: [ "jobs" ]
+    verbs: [ "create", "get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-job-handler
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: job-handler
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default

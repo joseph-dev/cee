@@ -44,7 +44,7 @@ executionWss.on('connection', async (ws) => {
     ws.close()
     redis.hDelAsync('execRequests', ws.payload.executionId)
     redis.hDelAsync('execResults', ws.payload.executionId)
-    console.log(error) // @TODO implement error logging
+    console.log(e) // @TODO implement error logging
 
   }
 
