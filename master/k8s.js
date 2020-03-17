@@ -7,7 +7,7 @@ const kubeToken = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount
 const caCrt = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt')
 
 module.exports = {
-  namespace: 'default',
+  namespace: process.env.KUBERNETES_NAMESPACE,
   axios: axios.create({
     baseURL: kubeApiBaseUrl,
     headers: {
