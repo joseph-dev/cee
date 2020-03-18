@@ -3,7 +3,7 @@ const handlers = {
   available: require('./handlers/available'),
 }
 
-module.exports = (request) => {
+module.exports = async (request) => {
 
   let handler = handlers[request.command]
 
@@ -11,6 +11,6 @@ module.exports = (request) => {
     throw new Error(`The "${request.command}" command is not supported.`)
   }
 
-  return handler(request.params)
+  return await handler(request.params)
 
 }

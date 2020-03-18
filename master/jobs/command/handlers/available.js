@@ -1,4 +1,4 @@
-module.exports = () => {
+module.exports = async () => {
 
   // @TODO add real values
   return {

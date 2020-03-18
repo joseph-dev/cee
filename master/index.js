@@ -63,7 +63,7 @@ app.post('/:runner', async (req, res) => {
 
   // Process the request
   requestData.body.params.runner = req.params.runner
-  let commandResult = execCommand(requestData.body)
+  let commandResult = await execCommand(requestData.body)
 
   // send proper response
   if (contentTypeIsXml) {

@@ -1,16 +1,21 @@
 const redis = require('../../../redis')
+const randomNumber = require("random-number-csprng")
 
-module.exports = (data) => {
+module.exports = async (data) => {
 
-  const executionId = Date.now() // @TODO make execution if more unique(secure), check how it's done in VPL Jail server
+  const MIN_NUMBER = Math.pow(2,40)
+  const MAX_NUMBER = Number.MAX_SAFE_INTEGER
+  const adminTicketId = await randomNumber(MIN_NUMBER, MAX_NUMBER)
+  const monitorTicketId = await randomNumber(MIN_NUMBER, MAX_NUMBER)
+  const executionTicketId = await randomNumber(MIN_NUMBER, MAX_NUMBER)
 
-  redis.hSetAsync('execRequests', executionId, JSON.stringify(data))
+  redis.hSetAsync('execRequests', executionTicketId, JSON.stringify(data))
 
   // @TODO add real values
   return {
-    adminTicket: executionId,
-    monitorTicket: executionId,
-    executionTicket: executionId,
+    adminTicket: adminTicketId,
+    monitorTicket: monitorTicketId,
+    executionTicket: executionTicketId,
     port: 80,
     securePort: 443,
   }
