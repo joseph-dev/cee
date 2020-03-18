@@ -1,3 +1,4 @@
+const config = require('../../../config')
 const redis = require('../../../redis')
 const randomNumber = require("random-number-csprng")
 
@@ -16,8 +17,8 @@ module.exports = async (data) => {
     adminTicket: adminTicketId,
     monitorTicket: monitorTicketId,
     executionTicket: executionTicketId,
-    port: 80,
-    securePort: 443,
+    port: config.network.port,
+    securePort: config.network.securePort
   }
 
 }

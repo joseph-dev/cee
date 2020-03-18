@@ -1,3 +1,5 @@
+const config = require('../../../config')
+
 module.exports = async () => {
 
   // @TODO add real values
@@ -8,7 +10,7 @@ module.exports = async () => {
     maxFileSize: 67108864,
     maxMemory: 2097152000,
     maxProcesses: 500,
-    securePort: 443,
+    securePort: config.network.securePort,
   }
 
 }
