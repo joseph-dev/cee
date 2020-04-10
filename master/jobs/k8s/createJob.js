@@ -1,8 +1,8 @@
 const k8s = require('../../k8s')
 
-module.exports = async (jobName, runnerVersion, executionId) => {
+module.exports = async (jobName, runnerVersion, executionId, params) => {
 
-  return await k8s.axios.post(`/batch/v1/namespaces/${k8s.namespace}/jobs`, {
+  return await k8s.axios.post(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs`, {
     apiVersion: "batch/v1",
     kind: "Job",
     metadata: {
@@ -20,13 +20,22 @@ module.exports = async (jobName, runnerVersion, executionId) => {
                 "node",
                 "index.js",
                 `--execution-id=${executionId}`
-              ]
+              ],
+              resources: {
+                requests: {
+                  memory: params.maxMemory
+                },
+                limits: {
+                  memory: params.maxMemory
+                }
+              }
             }
           ],
           restartPolicy: "Never"
         }
       },
-      backoffLimit: 1
+      backoffLimit: 0,
+      completions: 1
     }
   }, {httpsAgent: k8s.httpsAgent})
 

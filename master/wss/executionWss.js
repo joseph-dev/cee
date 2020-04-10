@@ -2,6 +2,7 @@ const WebSocket = require('ws')
 const redis = require('../redis')
 const createJob = require('../jobs/k8s/createJob')
 const watchJob = require('../jobs/k8s/watchJob')
+const getPodInfoByJobName = require('../jobs/k8s/getPodInfoByJobName')
 
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
@@ -23,70 +24,77 @@ executionWss.on('connection', async (ws) => {
   })
 
 
-  let watchJobResponse;
+
+  let responseToSend = `CEE: execution failed (unknown reason)`
+
   try {
+
+    const params = JSON.parse(await redis.hGetAsync('execRequests', ws.payload.executionId))
+    if (! params) {
+      throw new Error(`No params found for the request with id "${ws.payload.executionId}"`)
+    }
 
     // Create a job
     const jobName = `job-${ws.payload.executionId}`
-    const createJobResponse = await createJob(jobName, ws.payload.runner, ws.payload.executionId)
+    const createJobResponse = await createJob(jobName, ws.payload.runner, ws.payload.executionId, params)
     if (![200, 201, 202].includes(createJobResponse.status)) {
       throw new Error("Failed to create a job")
     }
 
     // Watch the created job
-    watchJobResponse = await watchJob(jobName)
+    const watchJobResponse = await watchJob(jobName)
     if (watchJobResponse.status !== 200) {
       throw new Error("Failed to watch the created job")
     }
 
+    // Process stream to see the changes
+    const stream = watchJobResponse.data
+    stream.on('data', async (chunk) => {
+
+      try {
+
+        const message = (Buffer.from(chunk)).toString()
+        const chunkData = JSON.parse(message)
+
+        if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
+
+          const podInfo = await getPodInfoByJobName(jobName)
+          const containerTerminationReason = podInfo ? podInfo.status.containerStatuses[0].state.terminated.reason : null
+          const result = (containerTerminationReason === "Completed") ? JSON.parse(await redis.hGetAsync('execResults', ws.payload.executionId)) : null
+
+          if (result) {
+            responseToSend = result.output
+          } else if (containerTerminationReason === "OOMKilled") {
+            responseToSend = `CEE: out of memory (${params.maxMemory}B)`
+          }
+
+          ws.send(responseToSend)
+          ws.close()
+          redis.hDelAsync('execRequests', ws.payload.executionId)
+          redis.hDelAsync('execResults', ws.payload.executionId)
+        }
+
+      } catch (e) {
+
+        ws.send(responseToSend)
+        ws.close()
+        redis.hDelAsync('execRequests', ws.payload.executionId)
+        redis.hDelAsync('execResults', ws.payload.executionId)
+        console.log(e) // @TODO implement error logging
+
+      }
+
+    })
+
   } catch (e) {
 
+    ws.send(responseToSend)
     ws.close()
     redis.hDelAsync('execRequests', ws.payload.executionId)
     redis.hDelAsync('execResults', ws.payload.executionId)
     console.log(e) // @TODO implement error logging
 
   }
-
-
-  // Process stream to see the changes
-  const stream = watchJobResponse.data
-  stream.on('data', async (chunk) => {
-
-    try {
-
-      const message = (Buffer.from(chunk)).toString()
-      let chunkData = JSON.parse(message)
-
-      if (chunkData.object.status.succeeded) {
-
-        let result = JSON.parse(await redis.hGetAsync('execResults', ws.payload.executionId))
-        if (result) {
-
-          ws.send(result.output)
-          ws.close()
-          redis.hDelAsync('execRequests', ws.payload.executionId)
-          redis.hDelAsync('execResults', ws.payload.executionId)
-        }
-
-      } else if (chunkData.object.status.failed) {
-
-        ws.close()
-        redis.hDelAsync('execRequests', ws.payload.executionId)
-        redis.hDelAsync('execResults', ws.payload.executionId)
-
-      }
-
-    } catch (e) {
-
-      ws.close()
-      redis.hDelAsync('execRequests', ws.payload.executionId)
-      redis.hDelAsync('execResults', ws.payload.executionId)
-      console.log(error) // @TODO implement error logging
-
-    }
-
-  })
 
 })
 
