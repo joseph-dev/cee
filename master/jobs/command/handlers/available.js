@@ -6,9 +6,9 @@ module.exports = async () => {
   return {
     status: 'ready',
     load: 0,
-    maxTime: 600,
+    maxTime: config.executionParams.time.max,
     maxFileSize: 67108864,
-    maxMemory: 2097152000,
+    maxMemory: config.executionParams.memory.max,
     maxProcesses: 500,
     securePort: config.network.securePort,
   }

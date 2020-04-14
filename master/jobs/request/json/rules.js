@@ -1,3 +1,5 @@
+const eParams = require('../../../config').executionParams
+
 module.exports = {
 
   available: {
@@ -5,9 +7,9 @@ module.exports = {
   },
 
   request: {
-    maxTime: {type: Number, required: true},
+    maxTime: {type: Number, required: true, range: `${eParams.time.min}-${eParams.time.max}`},
     maxFileSize: {type: Number, required: true},
-    maxMemory: {type: Number, required: true},
+    maxMemory: {type: Number, required: true, range: `${eParams.memory.min}-${eParams.memory.max}`},
     maxProcesses: {type: Number, required: true},
     userId: {type: String, required: true},
     activityId: {type: String, required: true},
