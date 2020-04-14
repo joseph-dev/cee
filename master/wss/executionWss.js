@@ -59,11 +59,21 @@ executionWss.on('connection', async (ws) => {
         if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
 
           const podInfo = await getPodInfoByJobName(jobName)
-          const containerTerminationReason = podInfo ? podInfo.status.containerStatuses[0].state.terminated.reason : null
-          const result = (containerTerminationReason === "Completed") ? JSON.parse(await redis.hGetAsync('execResults', ws.payload.executionId)) : null
+          let containerTerminationReason = null
+          if (
+            podInfo &&
+            podInfo.status.containerStatuses.length &&
+            podInfo.status.containerStatuses[0].state.terminated
+          ) {
+            containerTerminationReason = podInfo.status.containerStatuses[0].state.terminated.reason
+          }
+          const outOfTime = chunkData.object.status.conditions[0].reason === 'DeadlineExceeded'
+          const result = (containerTerminationReason === "Completed" && ! outOfTime) ? JSON.parse(await redis.hGetAsync('execResults', ws.payload.executionId)) : null
 
           if (result) {
             responseToSend = result.output
+          } else if (outOfTime) {
+            responseToSend = `CEE: out of time (${params.maxTime}s)`
           } else if (containerTerminationReason === "OOMKilled") {
             responseToSend = `CEE: out of memory (${params.maxMemory}B)`
           }

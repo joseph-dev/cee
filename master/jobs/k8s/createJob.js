@@ -10,6 +10,7 @@ module.exports = async (jobName, runnerVersion, executionId, params) => {
     },
     spec: {
       ttlSecondsAfterFinished: 0, // Requires 'TTLAfterFinished' feature gate to be enabled
+      activeDeadlineSeconds: params.maxTime,
       template: {
         spec: {
           containers: [

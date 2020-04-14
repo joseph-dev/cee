@@ -39,10 +39,7 @@ let execute = async (executionId) => {
     if (! sh.test('-e', 'vpl_execution')) {
       throw new Error(`File "vpl_execution" doesn't exist`)
     }
-
-    const timeLimit = params.maxTime
-    const timeoutMessage = "The time limit has been exceeded"
-    const finalResult = sh.exec(`timeout ${timeLimit} ./vpl_execution || ([ $? -eq 124 ] && echo "${timeoutMessage}")`)
+    const finalResult = sh.exec('./vpl_execution')
 
     if (finalResult.stdout) {
       result.output = finalResult.stdout
