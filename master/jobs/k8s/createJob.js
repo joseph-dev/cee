@@ -38,6 +38,6 @@ module.exports = async (jobName, runnerVersion, executionId, params) => {
       backoffLimit: 0,
       completions: 1
     }
-  }, {httpsAgent: k8s.httpsAgent})
+  })
 
 }

@@ -48,7 +48,7 @@ app.post('/:runner', async (req, res) => {
     requestData = await analyzeJsonRequest(req.body)
   }
 
-  // Check if the request is valid, if it's not return the found errors
+  // Check if the request is valid. If it's not, return the found errors
   if (! requestData.isValid) {
     res.status(400)
 

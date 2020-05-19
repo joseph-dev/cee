@@ -141,10 +141,7 @@ metadata:
   namespace: cee
 rules:
   - apiGroups: [ "" ]
-    resources: [ "pods", "services"]
-    verbs: [ "get", "list", "watch"]
-  - apiGroups: [ "apps" ]
-    resources: [ "deployments" ]
+    resources: [ "nodes", "pods"]
     verbs: [ "get", "list", "watch"]
   - apiGroups: [ "batch" ]
     resources: [ "jobs" ]

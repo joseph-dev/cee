@@ -8,9 +8,17 @@ module.exports = {
       min: 1,
       max: 60
     },
-    memory: { // 4 to 100 MiB
+    memory: { // 4 to 64 MiB
       min: 4194304,
-      max: 104857600
+      max: 67108864
+    },
+    storage: { // 1 to 64 MiB
+      min: 1,
+      max: 67108864
+    },
+    processes: { // 1 to 64
+      min: 1,
+      max: 64
     }
   }
 }

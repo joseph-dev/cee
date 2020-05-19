@@ -3,7 +3,7 @@ const eParams = require('../../../config').executionParams
 module.exports = {
 
   available: {
-    maxMemory: {type:  Number, required: true}
+    maxMemory: {type: Number, required: true, range: `${eParams.memory.min}-${eParams.memory.max}`}
   },
 
   request: {

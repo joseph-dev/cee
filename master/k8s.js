@@ -12,7 +12,7 @@ module.exports = {
     baseURL: kubeApiBaseUrl,
     headers: {
       "Authorization": `Bearer ${kubeToken}`
-    }
-  }),
-  httpsAgent: new https.Agent({ca: caCrt, keepAlive: false})
+    },
+    httpsAgent: new https.Agent({ca: caCrt, keepAlive: false})
+  })
 }
