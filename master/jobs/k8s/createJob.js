@@ -9,7 +9,7 @@ module.exports = async (jobName, runnerVersion, executionId, params) => {
       name: jobName
     },
     spec: {
-      ttlSecondsAfterFinished: 0, // Requires 'TTLAfterFinished' feature gate to be enabled
+      ttlSecondsAfterFinished: 0, // Requires 'TTLAfterFinished' feature gate should be enabled
       activeDeadlineSeconds: params.maxTime,
       template: {
         spec: {
@@ -24,10 +24,12 @@ module.exports = async (jobName, runnerVersion, executionId, params) => {
               ],
               resources: {
                 requests: {
-                  memory: params.maxMemory
+                  "memory": params.maxMemory,
+                  "ephemeral-storage": params.maxFileSize, // Requires 'LocalStorageCapacityIsolation' feature gate should be enabled
                 },
                 limits: {
-                  memory: params.maxMemory
+                  "memory": params.maxMemory,
+                  "ephemeral-storage": params.maxFileSize, // Requires 'LocalStorageCapacityIsolation' feature gate should be enabled
                 }
               }
             }

@@ -1,4 +1,5 @@
 const WebSocket = require('ws')
+const xbytes = require('xbytes')
 const redis = require('../redis')
 const createJob = require('../jobs/k8s/createJob')
 const watchJob = require('../jobs/k8s/watchJob')
@@ -60,12 +61,16 @@ executionWss.on('connection', async (ws) => {
 
           const podInfo = await getPodInfoByJobName(jobName)
           let containerTerminationReason = null
-          if (
-            podInfo &&
-            podInfo.status.containerStatuses.length &&
-            podInfo.status.containerStatuses[0].state.terminated
-          ) {
-            containerTerminationReason = podInfo.status.containerStatuses[0].state.terminated.reason
+
+          // if there is info about pod status
+          if (podInfo && podInfo.status) {
+            // if there is the reason of container termination
+            if (podInfo.status.containerStatuses && podInfo.status.containerStatuses.length && podInfo.status.containerStatuses[0].state.terminated) {
+              containerTerminationReason = podInfo.status.containerStatuses[0].state.terminated.reason
+            // if there is the reason of pod failure
+            } else if (podInfo.status.phase === 'Failed') {
+              containerTerminationReason = podInfo.status.message
+            }
           }
           const outOfTime = chunkData.object.status.conditions[0].reason === 'DeadlineExceeded'
           const result = (containerTerminationReason === "Completed" && ! outOfTime) ? JSON.parse(await redis.hGetAsync('execResults', ws.payload.executionId)) : null
@@ -75,7 +80,9 @@ executionWss.on('connection', async (ws) => {
           } else if (outOfTime) {
             responseToSend = `CEE: out of time (${params.maxTime}s)`
           } else if (containerTerminationReason === "OOMKilled") {
-            responseToSend = `CEE: out of memory (${params.maxMemory}B)`
+            responseToSend = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
+          } else if (containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
+            responseToSend = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
           }
 
           ws.send(responseToSend)
