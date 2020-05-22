@@ -11,5 +11,6 @@ client.on('connect', function () {
 });
 
 client.hGetAsync = promisify(client.hget).bind(client)
+client.hExistsAsync = promisify(client.hexists).bind(client)
 
 module.exports = client

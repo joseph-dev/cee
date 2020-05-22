@@ -3,8 +3,12 @@ const fs = require('fs')
 const program = require('commander')
 const redis = require('./redis')
 
-// Function for processing execution
-let execute = async (executionId) => {
+const REDIS_REQUEST_SET = 'requests'
+const REDIS_RESULT_SET = 'results'
+const EXECUTION_FILE = 'vpl_execution'
+
+// Function for processing the execution
+let execute = async (requestId) => {
 
   let result = {
     success: true,
@@ -16,7 +20,7 @@ let execute = async (executionId) => {
   try {
 
     // get params from Redis
-    const paramsJson = await redis.hGetAsync('execRequests', executionId)
+    const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, requestId)
     if (! paramsJson) {
       throw new Error(`Invalid request`)
     }
@@ -36,10 +40,10 @@ let execute = async (executionId) => {
     sh.chmod('u+x', params.execute)
     sh.exec('./' + params.execute)
 
-    if (! sh.test('-e', 'vpl_execution')) {
-      throw new Error(`File "vpl_execution" doesn't exist`)
+    if (! sh.test('-e', EXECUTION_FILE)) {
+      throw new Error(`File "${EXECUTION_FILE}" doesn't exist`)
     }
-    const finalResult = sh.exec('./vpl_execution')
+    const finalResult = sh.exec(`./${EXECUTION_FILE}`)
 
     if (finalResult.stdout) {
       result.output = finalResult.stdout
@@ -58,19 +62,23 @@ let execute = async (executionId) => {
     // delete unnecessary files and go back to the home dir
     sh.rm('-rf', `${folderPath}/*`)
     sh.cd('/app')
-    redis.hset('execResults', executionId, JSON.stringify(result))
+
+    // Set the result only if the request has not been processed yet and there is no other result in redis
+    if (await redis.hExistsAsync(REDIS_REQUEST_SET, requestId)) {
+      redis.hsetnx(REDIS_RESULT_SET, requestId, JSON.stringify(result))
+    }
     redis.quit()
   }
 
 }
 
 // Declare and parse cl parameters
-program.requiredOption("--execution-id <id>", "Execution ID", parseInt)
+program.requiredOption("--request-id <id>", "Request ID", parseInt)
 program.parse(process.argv)
 
-if (isNaN(program.executionId)){
-  throw new Error(`Invalid value for '--execution-id'`)
+if (isNaN(program.requestId)){
+  throw new Error(`Invalid value for '--request-id'`)
 }
 
 // process
-execute(program.executionId)
+execute(program.requestId)

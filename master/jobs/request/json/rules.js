@@ -11,7 +11,7 @@ module.exports = {
     maxFileSize: {type: Number, required: true},
     maxMemory: {type: Number, required: true, range: `${eParams.memory.min}-${eParams.memory.max}`},
     execute: {type: String, required: true},
-    interactive: {type: Number, required: true},
+    interactive: {type: Boolean, required: true},
     files: {
       type: Array,
       schema: {

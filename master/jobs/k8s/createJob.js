@@ -1,6 +1,6 @@
 const k8s = require('../../k8s')
 
-module.exports = async (jobName, runnerVersion, executionId, params) => {
+module.exports = async (jobName, runnerVersion, requestId, params) => {
 
   return await k8s.axios.post(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs`, {
     apiVersion: "batch/v1",
@@ -20,7 +20,7 @@ module.exports = async (jobName, runnerVersion, executionId, params) => {
               command: [
                 "node",
                 "index.js",
-                `--execution-id=${executionId}`
+                `--request-id=${requestId}`
               ],
               resources: {
                 requests: {

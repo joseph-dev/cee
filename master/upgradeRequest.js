@@ -20,25 +20,22 @@ module.exports = async (request, socket, head) => {
     return
   }
 
-  const executionIdIsValid = await redis.hExistsAsync('execRequests', params.executionId)
-  // if the execution ID is wrong
-  if (! executionIdIsValid) {
+  const requestId = parseInt(await redis.hGetAsync(redis.EXECUTION_TICKET_SET, params.executionId))
+  // if the execution ID corresponds to a request ID
+  if (! requestId) {
     socket.destroy()
     return
   }
 
-  const executionParams = JSON.parse(await redis.hGetAsync('execRequests', params.executionId))
+  const requestParams = JSON.parse(await redis.hGetAsync(redis.REQUEST_SET, requestId))
   // if the current runner doesn't match the runner from the previous request
-  if (executionParams.runner !== params.runner) {
+  if (requestParams.runner !== params.runner) {
     socket.destroy()
     return
   }
 
   executionWss.handleUpgrade(request, socket, head, (ws) => {
-    ws.payload = {
-      executionId: params.executionId,
-      runner: params.runner
-    }
+    ws.requestId = requestId
     executionWss.emit('connection', ws, request)
   })
 
