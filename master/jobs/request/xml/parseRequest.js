@@ -30,6 +30,12 @@ module.exports = function (xmlDoc){
       files: extractFiles(getMemberValue(members, 'files', 'struct').childNodes())
     }
 
+  } else if (methodName === 'getresult') {
+
+    response.params = {
+      adminticket: getMemberValue(members, 'adminticket', 'string')
+    }
+
   }
 
   return response

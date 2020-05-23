@@ -19,5 +19,6 @@ client.ADMIN_TICKET_SET = 'adminTickets'
 client.hSetAsync = promisify(client.hset).bind(client)
 client.hGetAsync = promisify(client.hget).bind(client)
 client.hDelAsync = promisify(client.hdel).bind(client)
+client.hExistsAsync = promisify(client.hexists).bind(client)
 
 module.exports = client

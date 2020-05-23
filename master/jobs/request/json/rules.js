@@ -1,4 +1,5 @@
 const eParams = require('../../../config').executionParams
+const redis = require('../../../redis')
 
 module.exports = {
 
@@ -8,7 +9,7 @@ module.exports = {
 
   request: {
     maxTime: {type: Number, required: true, range: `${eParams.time.min}-${eParams.time.max}`},
-    maxFileSize: {type: Number, required: true},
+    maxFileSize: {type: Number, required: true, range: `${eParams.storage.min}-${eParams.storage.max}`},
     maxMemory: {type: Number, required: true, range: `${eParams.memory.min}-${eParams.memory.max}`},
     execute: {type: String, required: true},
     interactive: {type: Boolean, required: true},
@@ -20,4 +21,13 @@ module.exports = {
       }
     }
   },
+
+  getresult: {
+    adminticket: {type: Number, required: true, post: async (adminticket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
+          throw new Error("The adminticket is not valid.")
+        }
+      }
+    }
+  }
 }

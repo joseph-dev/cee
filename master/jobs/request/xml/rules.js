@@ -16,4 +16,8 @@ module.exports = {
     lang: {template: 'string'},
     files: {template: 'files'}
   },
+
+  getresult: {
+    adminticket: {template: 'string'},
+  }
 }

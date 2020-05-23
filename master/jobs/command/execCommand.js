@@ -1,6 +1,7 @@
 const handlers = {
   request: require('./handlers/request'),
   available: require('./handlers/available'),
+  getresult: require('./handlers/getResult'),
 }
 
 module.exports = async (request) => {

@@ -12,7 +12,7 @@ module.exports = {
       min: 4194304,
       max: 67108864
     },
-    storage: { // 1 to 64 MiB
+    storage: { // 1 B to 64 MiB
       min: 1,
       max: 67108864
     },
