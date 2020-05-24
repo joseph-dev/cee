@@ -4,11 +4,14 @@ const bodyParser = require('body-parser')
 const path = require('path')
 
 // Other imports
-const analyzeXmlRequest = require('./jobs/request/analyzeXmlRequest')
-const analyzeJsonRequest = require('./jobs/request/analyzeJsonRequest')
-const execCommand = require('./jobs/command/execCommand')
+const isRunnerSupported = require('./middlewares/isRunnerSupported')
+const preprocessRequest = require('./middlewares/preprocessRequest')
+const supportedCommands = require('./middlewares/supportedCommands')
 const upgradeRequest = require('./upgradeRequest')
-const runners = require('./runners')
+const routeHandlers = {
+  status: require('./routes/status'),
+  request: require('./routes/request'),
+}
 
 // Create the app
 const app = express()
@@ -26,54 +29,10 @@ app.use(bodyParser.json({ type: 'application/json' }))
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/responses'));
 
-
-// Basic route for checking if the service is up
-app.get('/OK', (req, res) => res.send('OK!'))
-
-// Main endpoint
-app.post('/:runner', async (req, res) => {
-
-  if (! req.params.runner || ! runners.includes(req.params.runner)) {
-    res.sendStatus(404)
-    return
-  }
-
-  let requestData = {}
-  let contentTypeIsXml = (req.headers['content-type'] || '').toLowerCase() === 'application/xml'
-
-  // Check what kind of request is received and analyze it accordingly
-  if (contentTypeIsXml) {
-    requestData = analyzeXmlRequest(req.body)
-  } else {
-    requestData = await analyzeJsonRequest(req.body)
-  }
-
-  // Check if the request is valid. If it's not, return the found errors
-  if (! requestData.isValid) {
-    res.status(400)
-
-    if (contentTypeIsXml) {
-      res.render(`html/badRequest`, {error: requestData.errors[0]})
-    } else {
-      res.send(requestData.errors)
-    }
-
-    return
-  }
-
-  // Process the request
-  requestData.body.params.runner = req.params.runner
-  let commandResult = await execCommand(requestData.body)
-
-  // send proper response
-  if (contentTypeIsXml) {
-    res.setHeader('content-type', 'text/xml');
-    res.render(`xml/${requestData.body.command}`, commandResult)
-  } else {
-    res.send(commandResult)
-  }
-
-})
+// Routes
+app.get('/OK', routeHandlers.status)
+app.post('/', [preprocessRequest, supportedCommands(['available', 'getresult'])], routeHandlers.request) // @TODO add 'running' and 'stop'
+app.post('/:runner', [isRunnerSupported, preprocessRequest, supportedCommands(['request'])], routeHandlers.request)
 
 // Process requests to wrong urls
 app.use((req, res, next) => {

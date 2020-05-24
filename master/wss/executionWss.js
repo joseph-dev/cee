@@ -1,4 +1,5 @@
 const WebSocket = require('ws')
+const redis = require('./../redis')
 const executeCode = require('../jobs/executeCode')
 const cleanUp = require('../jobs/cleanUp')
 
@@ -22,10 +23,16 @@ executionWss.on('connection', async (ws) => {
   })
 
 
-  executeCode(ws.requestId).then((executionResult) => {
+  const requestId = await redis.hGetAsync(redis.EXECUTION_TICKET_SET, ws.executionId)
+  if (! requestId) {
+    ws.close()
+    return
+  }
+
+  executeCode(requestId).then((executionResult) => {
     ws.send(executionResult.output)
     ws.close()
-    cleanUp(ws.requestId)
+    cleanUp(requestId)
   })
 
 })

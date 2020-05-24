@@ -1,25 +1,15 @@
-const libxmljs = require("libxmljs")
 const validateRequest = require("./xml/validateRequest")
 const parseRequest = require("./xml/parseRequest")
 
 module.exports = function (data) {
 
-  let xmlDoc
   let response = {
     isValid: true,
     body: {},
     errors: []
   }
 
-  try {
-    xmlDoc = libxmljs.parseXml(data)
-  } catch (e) {
-    response.isValid = false
-    response.errors.push("The passed XML document is not valid.")
-    return response
-  }
-
-  let validationResult = validateRequest(xmlDoc)
+  let validationResult = validateRequest(data)
   if (! validationResult.isValid) {
     response.isValid = false
     response.errors = validationResult.errors
@@ -27,7 +17,7 @@ module.exports = function (data) {
   }
 
 
-  response.body = parseRequest(xmlDoc)
+  response.body = parseRequest(data)
 
   return response
 }

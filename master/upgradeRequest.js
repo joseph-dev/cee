@@ -2,41 +2,41 @@ const url = require('url')
 const UrlPattern = require('url-pattern')
 const executionWss = require('./wss/executionWss')
 const redis = require('./redis')
-const runners = require('./runners')
 
 module.exports = async (request, socket, head) => {
-
-  const pathname = url.parse(request.url).pathname
-  const pattern = new UrlPattern(/^\/([a-z0-9.]+)\/([0-9]+)\/execute$/, ['runner', 'executionId'])
-  const params = pattern.match(pathname)
 
   if (request.headers.upgrade !== 'websocket') {
     return
   }
 
-  // if the path or runner is incorrect
-  if (! params || ! runners.includes(params.runner)) {
+  const pathname = url.parse(request.url).pathname
+  const pattern = new UrlPattern(/^\/([0-9]+)\/(execute|monitor)$/, ['ticketId', 'command'])
+  const params = pattern.match(pathname)
+
+  // destroy the socket if the path doesn't match the format
+  if (! params) {
     socket.destroy()
     return
   }
 
-  const requestId = parseInt(await redis.hGetAsync(redis.EXECUTION_TICKET_SET, params.executionId))
-  // if the execution ID corresponds to a request ID
-  if (! requestId) {
-    socket.destroy()
+  // if it's an "execute" request and the ticket is valid
+  if (params.command === 'execute' && await redis.hExistsAsync(redis.EXECUTION_TICKET_SET, params.ticketId)) {
+    executionWss.handleUpgrade(request, socket, head, (ws) => {
+      ws.executionId = params.ticketId
+      executionWss.emit('connection', ws, request)
+    })
     return
   }
 
-  const requestParams = JSON.parse(await redis.hGetAsync(redis.REQUEST_SET, requestId))
-  // if the current runner doesn't match the runner from the previous request
-  if (requestParams.runner !== params.runner) {
-    socket.destroy()
-    return
-  }
+  // if it's a "monitor" request and the ticket is valid
+  // if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
+  //   monitorWss.handleUpgrade(request, socket, head, (ws) => {
+  //     ws.monitorId = params.ticketId
+  //     monitorWss.emit('connection', ws, request)
+  //   })
+  //   return
+  // }
 
-  executionWss.handleUpgrade(request, socket, head, (ws) => {
-    ws.requestId = requestId
-    executionWss.emit('connection', ws, request)
-  })
+  socket.destroy()
 
 }
