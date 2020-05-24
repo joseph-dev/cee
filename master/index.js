@@ -31,7 +31,7 @@ app.set('views', path.join(__dirname, '/responses'));
 
 // Routes
 app.get('/OK', routeHandlers.status)
-app.post('/', [preprocessRequest, supportedCommands(['available', 'getresult'])], routeHandlers.request) // @TODO add 'running' and 'stop'
+app.post('/', [preprocessRequest, supportedCommands(['available', 'getresult', 'running'])], routeHandlers.request) // @TODO add 'stop'
 app.post('/:runner', [isRunnerSupported, preprocessRequest, supportedCommands(['request'])], routeHandlers.request)
 
 // Process requests to wrong urls

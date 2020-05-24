@@ -36,6 +36,12 @@ module.exports = function (xmlDoc){
       adminticket: getMemberValue(members, 'adminticket', 'string')
     }
 
+  } else if (methodName === 'running') {
+
+    response.params = {
+      adminticket: getMemberValue(members, 'adminticket', 'string')
+    }
+
   }
 
   return response

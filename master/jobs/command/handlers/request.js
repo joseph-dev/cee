@@ -19,10 +19,11 @@ module.exports = async (params) => {
 
   await redis.hSetAsync(redis.REQUEST_SET, requestId, JSON.stringify(params))
   redis.hSetAsync(redis.MONITOR_TICKET_SET, monitorTicketId, requestId)
+  redis.hSetAsync(redis.ADMIN_TICKET_SET, adminTicketId, requestId)
+
   if (params.interactive) {
     redis.hSetAsync(redis.EXECUTION_TICKET_SET, executionTicketId, requestId)
   } else {
-    redis.hSetAsync(redis.ADMIN_TICKET_SET, adminTicketId, requestId)
     executeCode(requestId).then((executionResult) => { /* Ignore the result */ })
   }
 

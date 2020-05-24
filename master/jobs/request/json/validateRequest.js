@@ -11,7 +11,7 @@ module.exports = async function (data) {
   try {
 
     let validatedData = await isvalid(data, {
-      command: {type: String, required: true, enum: ['available','request', 'getresult']},
+      command: {type: String, required: true},
       params: {type: Object, unknownKeys: 'allow', required: true}
     })
 

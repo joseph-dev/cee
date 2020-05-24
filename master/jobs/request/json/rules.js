@@ -29,5 +29,14 @@ module.exports = {
         }
       }
     }
+  },
+
+  running: {
+    adminticket: {type: Number, required: true, post: async (adminticket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
+          throw new Error("The adminticket is not valid.")
+        }
+      }
+    }
   }
 }

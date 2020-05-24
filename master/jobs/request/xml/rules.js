@@ -19,5 +19,9 @@ module.exports = {
 
   getresult: {
     adminticket: {template: 'string'},
+  },
+
+  running: {
+    adminticket: {template: 'string'},
   }
 }

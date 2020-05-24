@@ -3,6 +3,8 @@ const redis = require('./../redis')
 const executeCode = require('../jobs/executeCode')
 const cleanUp = require('../jobs/cleanUp')
 
+const INTERACTIVE_EXECUTION_TTL = 60000 // ttl (miliseconds) for the result ot be stored after interactive execution
+
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
 executionWss.on('connection', async (ws) => {
@@ -32,7 +34,7 @@ executionWss.on('connection', async (ws) => {
   executeCode(requestId).then((executionResult) => {
     ws.send(executionResult.output)
     ws.close()
-    cleanUp(requestId)
+    setTimeout(cleanUp, INTERACTIVE_EXECUTION_TTL, requestId)
   })
 
 })
