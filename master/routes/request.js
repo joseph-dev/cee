@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
 
   // Check what kind of request is received and analyze it accordingly
   if (req.isXml) {
-    requestData = analyzeXmlRequest(req.body)
+    requestData = await analyzeXmlRequest(req.body)
   } else {
     requestData = await analyzeJsonRequest(req.body)
   }

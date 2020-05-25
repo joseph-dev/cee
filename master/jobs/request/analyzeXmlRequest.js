@@ -1,7 +1,7 @@
 const validateRequest = require("./xml/validateRequest")
 const parseRequest = require("./xml/parseRequest")
 
-module.exports = function (data) {
+module.exports = async (data) => {
 
   let response = {
     isValid: true,
@@ -9,7 +9,7 @@ module.exports = function (data) {
     errors: []
   }
 
-  let validationResult = validateRequest(data)
+  let validationResult = await validateRequest(data)
   if (! validationResult.isValid) {
     response.isValid = false
     response.errors = validationResult.errors

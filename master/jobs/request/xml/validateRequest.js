@@ -2,7 +2,7 @@ const libxmljs = require("libxmljs")
 const rules = require("./rules")
 const fs = require('fs')
 
-module.exports = function (xmlDoc){
+module.exports = async (xmlDoc) => {
 
   let response = {
     isValid: false,
@@ -37,6 +37,16 @@ module.exports = function (xmlDoc){
       response.errors.push(`Error in parameter '${member}': ` + memberDoc.validationErrors.toString().substr(7))
       return response
     }
+
+    // if there is 'post' validation function
+    if (memberRules.post) {
+      try {
+        await memberRules.post(extractData(memberDoc, memberRules.template))
+      } catch (e) {
+        response.errors.push(e)
+        return response
+      }
+    }
   }
 
   response.isValid = true
@@ -52,6 +62,15 @@ function getMemberValue(members, memberName) {
       returnValue = member.get('value')
       break
     }
+  }
+
+  return returnValue
+}
+
+function extractData(memberDoc, type) {
+  let returnValue = memberDoc.get(type).text()
+  if (type === 'int') {
+    returnValue = parseInt(returnValue)
   }
 
   return returnValue
