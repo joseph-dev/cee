@@ -1,8 +1,8 @@
 const k8s = require('../../k8s')
 
-module.exports = async (jobName, runnerVersion, requestId, params) => {
+module.exports = async (jobName, requestId, params) => {
 
-  return await k8s.axios.post(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs`, {
+  const response = await k8s.axios.post(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs`, {
     apiVersion: "batch/v1",
     kind: "Job",
     metadata: {
@@ -16,7 +16,7 @@ module.exports = async (jobName, runnerVersion, requestId, params) => {
           containers: [
             {
               name: jobName,
-              image: `${process.env.RUNNER_IMAGE}:${runnerVersion}`,
+              image: `${process.env.RUNNER_IMAGE}:${params.runner}`,
               command: [
                 "node",
                 "index.js",
@@ -40,6 +40,12 @@ module.exports = async (jobName, runnerVersion, requestId, params) => {
       backoffLimit: 0,
       completions: 1
     }
+  }, {
+    validateStatus: (status) => {
+      return [200, 201, 202].includes(status)
+    }
   })
+
+  return response.data
 
 }

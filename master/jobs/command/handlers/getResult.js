@@ -9,34 +9,28 @@ module.exports = async (params) => {
     executed: false,
     interactive: false
   }
-  
-  try {
 
-    const requestId = await redis.hGetAsync(redis.ADMIN_TICKET_SET, params.adminticket)
+  // Get Request ID for the Admin Ticket
+  const requestId = await redis.hGetAsync(redis.ADMIN_TICKET_SET, params.adminticket)
+  if (! requestId) {
+    throw new Error("The adminticket is not valid.")
+  }
 
-    if (! requestId) {
-      throw new Error("The adminticket is not valid.")
-    }
+  // Get execution params
+  let executionParams = await redis.hGetAsync(redis.REQUEST_SET, requestId)
+  if (! executionParams) {
+    throw new Error("The adminticket is not valid.")
+  }
+  executionParams = JSON.parse(executionParams)
+  result.interactive = executionParams.interactive
 
-    let executionParams = await redis.hGetAsync(redis.REQUEST_SET, requestId)
-    if (executionParams) {
-      executionParams = JSON.parse(executionParams)
-      result.interactive = executionParams.interactive
-    }
-
-    let executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
-    if (executionResult) {
-      executionResult = JSON.parse(executionResult)
-      cleanUp(requestId)
-      result.execution = executionResult.output
-      result.executed = true
-    }
-
-  } catch (e) {
-
-    console.log(e)
-    // @TODO add logging
-
+  // Get execution result
+  let executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
+  if (executionResult) {
+    executionResult = JSON.parse(executionResult)
+    cleanUp(requestId)
+    result.execution = executionResult.output
+    result.executed = true
   }
 
   return result

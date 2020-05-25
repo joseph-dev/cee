@@ -1,6 +1,7 @@
 const config = require('../../../config')
 const redis = require('../../../redis')
 const executeCode = require('../../executeCode')
+const cleanUp = require('../../cleanUp')
 const randomNumber = require("random-number-csprng")
 
 module.exports = async (params) => {
@@ -18,13 +19,15 @@ module.exports = async (params) => {
   }
 
   await redis.hSetAsync(redis.REQUEST_SET, requestId, JSON.stringify(params))
-  redis.hSetAsync(redis.MONITOR_TICKET_SET, monitorTicketId, requestId)
-  redis.hSetAsync(redis.ADMIN_TICKET_SET, adminTicketId, requestId)
+  await redis.hSetAsync(redis.MONITOR_TICKET_SET, monitorTicketId, requestId)
+  await redis.hSetAsync(redis.ADMIN_TICKET_SET, adminTicketId, requestId)
 
   if (params.interactive) {
-    redis.hSetAsync(redis.EXECUTION_TICKET_SET, executionTicketId, requestId)
+    await redis.hSetAsync(redis.EXECUTION_TICKET_SET, executionTicketId, requestId)
   } else {
-    executeCode(requestId).then((executionResult) => { /* Ignore the result */ })
+    executeCode(requestId).then((executionResult) => {
+      setTimeout(cleanUp, config.cee.executionResultTtl, requestId)
+    })
   }
 
   return {

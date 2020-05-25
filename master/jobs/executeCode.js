@@ -2,7 +2,7 @@ const redis = require('../redis')
 const xbytes = require('xbytes')
 const createJob = require('../jobs/k8s/createJob')
 const watchJob = require('../jobs/k8s/watchJob')
-const getPodInfoByJobName = require('../jobs/k8s/getPodInfoByJobName')
+const getPodForJob = require('./k8s/getPodForJob')
 
 module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
@@ -13,6 +13,7 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
   try {
 
+    // Get execution params
     const params = JSON.parse(await redis.hGetAsync(redis.REQUEST_SET, requestId))
     if (! params) {
       throw new Error(`No params found for the request with id "${requestId}"`)
@@ -20,19 +21,12 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
     // Create a job
     const jobName = `job-${requestId}`
-    const createJobResponse = await createJob(jobName, params.runner, requestId, params)
-    if (![200, 201, 202].includes(createJobResponse.status)) {
-      throw new Error("Failed to create a job")
-    }
+    await createJob(jobName, requestId, params)
 
     // Watch the created job
-    const watchJobResponse = await watchJob(jobName)
-    if (watchJobResponse.status !== 200) {
-      throw new Error("Failed to watch the created job")
-    }
+    const stream = await watchJob(jobName)
 
     // Process stream to see the changes
-    const stream = watchJobResponse.data
     stream.on('data', async (chunk) => {
 
       try {
@@ -42,17 +36,17 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
         if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
 
-          const podInfo = await getPodInfoByJobName(jobName)
+          const pod = await getPodForJob(jobName)
           let containerTerminationReason = null
 
           // if there is info about pod status
-          if (podInfo && podInfo.status) {
+          if (pod && pod.status) {
             // if there is the reason of container termination
-            if (podInfo.status.containerStatuses && podInfo.status.containerStatuses.length && podInfo.status.containerStatuses[0].state.terminated) {
-              containerTerminationReason = podInfo.status.containerStatuses[0].state.terminated.reason
+            if (pod.status.containerStatuses && pod.status.containerStatuses.length && pod.status.containerStatuses[0].state.terminated) {
+              containerTerminationReason = pod.status.containerStatuses[0].state.terminated.reason
               // if there is the reason of pod failure
-            } else if (podInfo.status.phase === 'Failed') {
-              containerTerminationReason = podInfo.status.message
+            } else if (pod.status.phase === 'Failed') {
+              containerTerminationReason = pod.status.message
             }
           }
           const outOfTime = chunkData.object.status.conditions[0].reason === 'DeadlineExceeded'

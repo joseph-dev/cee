@@ -9,34 +9,42 @@ module.exports = async (request, socket, head) => {
     return
   }
 
-  const pathname = url.parse(request.url).pathname
-  const pattern = new UrlPattern(/^\/([0-9]+)\/(execute|monitor)$/, ['ticketId', 'command'])
-  const params = pattern.match(pathname)
+  try {
 
-  // destroy the socket if the path doesn't match the format
-  if (! params) {
+    const pathname = url.parse(request.url).pathname
+    const pattern = new UrlPattern(/^\/([0-9]+)\/(execute|monitor)$/, ['ticketId', 'command'])
+    const params = pattern.match(pathname)
+
+    // proceed if the url is correct
+    if (params) {
+
+      // if it's an "execute" request and the ticket is valid
+      if (params.command === 'execute' && await redis.hExistsAsync(redis.EXECUTION_TICKET_SET, params.ticketId)) {
+        executionWss.handleUpgrade(request, socket, head, (ws) => {
+          ws.executionId = params.ticketId
+          executionWss.emit('connection', ws, request)
+        })
+        return
+      }
+
+      // if it's a "monitor" request and the ticket is valid
+      // if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
+      //   monitorWss.handleUpgrade(request, socket, head, (ws) => {
+      //     ws.monitorId = params.ticketId
+      //     monitorWss.emit('connection', ws, request)
+      //   })
+      //   return
+      // }
+
+    }
+
     socket.destroy()
-    return
+
+  } catch (e) {
+
+    console.log(e) // @TODO add logging
+    socket.destroy()
+
   }
-
-  // if it's an "execute" request and the ticket is valid
-  if (params.command === 'execute' && await redis.hExistsAsync(redis.EXECUTION_TICKET_SET, params.ticketId)) {
-    executionWss.handleUpgrade(request, socket, head, (ws) => {
-      ws.executionId = params.ticketId
-      executionWss.emit('connection', ws, request)
-    })
-    return
-  }
-
-  // if it's a "monitor" request and the ticket is valid
-  // if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
-  //   monitorWss.handleUpgrade(request, socket, head, (ws) => {
-  //     ws.monitorId = params.ticketId
-  //     monitorWss.emit('connection', ws, request)
-  //   })
-  //   return
-  // }
-
-  socket.destroy()
 
 }

@@ -3,6 +3,9 @@ module.exports = {
     port: parseInt(process.env.MASTER_SERVICE_PORT) || 80,
     securePort: parseInt(process.env.MASTER_SERVICE_SECURE_PORT) || 443,
   },
+  cee: {
+    executionResultTtl: parseInt(process.env.EXECUTION_RESULT_TTL) || 60000 // ttl (milliseconds) for the result ot be stored after interactive execution
+  },
   executionParams: {
     time: { // 1 to 60 seconds
       min: 1,

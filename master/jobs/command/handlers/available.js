@@ -1,21 +1,22 @@
 const config = require('../../../config')
-const k8s = require('../../../k8s')
+const getNodes = require('../../k8s/getNodes')
+const getJobs = require('../../k8s/getJobs')
 const xbytes = require('xbytes')
 
 module.exports = async (params) => {
 
   // Get info about all the nodes and jobs
-  const nodesResponse = await k8s.axios.get(`/api/v1/nodes`)
-  const jobsResponse = await k8s.axios.get(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs`)
+  const nodes = await getNodes()
+  const jobs = await getJobs()
 
   let status = {
     ready: false,
     allocatableMemory: 0,
     allocatableStorage: 0,
   }
-  const jobsCount = jobsResponse.data.items.length
+  const jobsCount = jobs.length
 
-  for (const node of nodesResponse.data.items) {
+  for (const node of nodes) {
     // Get node allocatable resources
     const allocatablePods = parseInt(node.status.allocatable['pods'])
     const allocatableMemory = xbytes.parseSize(node.status.allocatable['memory'] + 'B')

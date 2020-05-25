@@ -10,7 +10,7 @@ const supportedCommands = require('./middlewares/supportedCommands')
 const upgradeRequest = require('./upgradeRequest')
 const routeHandlers = {
   status: require('./routes/status'),
-  request: require('./routes/request'),
+  main: require('./routes/main'),
 }
 
 // Create the app
@@ -31,8 +31,8 @@ app.set('views', path.join(__dirname, '/responses'));
 
 // Routes
 app.get('/OK', routeHandlers.status)
-app.post('/', [preprocessRequest, supportedCommands(['available', 'getresult', 'running'])], routeHandlers.request) // @TODO add 'stop'
-app.post('/:runner', [isRunnerSupported, preprocessRequest, supportedCommands(['request'])], routeHandlers.request)
+app.post('/', [preprocessRequest, supportedCommands(['available', 'getresult', 'running'])], routeHandlers.main) // @TODO add 'stop'
+app.post('/:runner', [isRunnerSupported, preprocessRequest, supportedCommands(['request'])], routeHandlers.main)
 
 // Process requests to wrong urls
 app.use((req, res, next) => {

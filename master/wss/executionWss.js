@@ -1,9 +1,9 @@
 const WebSocket = require('ws')
+const config = require('./../config')
 const redis = require('./../redis')
 const executeCode = require('../jobs/executeCode')
 const cleanUp = require('../jobs/cleanUp')
-
-const INTERACTIVE_EXECUTION_TTL = 60000 // ttl (miliseconds) for the result ot be stored after interactive execution
+const getJob = require('../jobs/k8s/getJob')
 
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
@@ -24,18 +24,32 @@ executionWss.on('connection', async (ws) => {
     console.log(error) // @TODO implement error logging
   })
 
+  try {
 
-  const requestId = await redis.hGetAsync(redis.EXECUTION_TICKET_SET, ws.executionId)
-  if (! requestId) {
+    const requestId = await redis.hGetAsync(redis.EXECUTION_TICKET_SET, ws.executionId)
+    if (! requestId) {
+      throw(`The executionticket is not valid. (EXECUTION_TICKET: ${ws.executionId})`)
+    }
+
+    const job = await getJob(`job-${requestId}`)
+    const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
+    if (job || executionResult) {
+      throw(`The execution is being processed or has been processed already. (REQUEST_ID: ${requestId})`)
+    }
+
+
+    executeCode(requestId).then((executionResult) => {
+      ws.send(executionResult.output)
+      ws.close()
+      setTimeout(cleanUp, config.cee.executionResultTtl, requestId)
+    })
+
+  } catch (e) {
+
     ws.close()
-    return
+    console.log(e) // @TODO add logging
+
   }
-
-  executeCode(requestId).then((executionResult) => {
-    ws.send(executionResult.output)
-    ws.close()
-    setTimeout(cleanUp, INTERACTIVE_EXECUTION_TTL, requestId)
-  })
 
 })
 
