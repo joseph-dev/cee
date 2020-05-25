@@ -1,4 +1,5 @@
 const config = require('../../../config')
+const runners = require('../../../runners')
 const getNodes = require('../../k8s/getNodes')
 const getJobs = require('../../k8s/getJobs')
 const xbytes = require('xbytes')
@@ -42,6 +43,7 @@ module.exports = async (params) => {
     maxMemory: Math.min(config.executionParams.memory.max, status.allocatableMemory),
     maxProcesses: config.executionParams.processes.max,
     securePort: config.network.securePort,
+    runners: runners
   }
 
 }
