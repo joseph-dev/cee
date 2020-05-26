@@ -1,4 +1,5 @@
 const _ = require('lodash')
+const rules = require("./rules")
 
 module.exports = function (xmlDoc){
 
@@ -9,37 +10,13 @@ module.exports = function (xmlDoc){
   }
   let members = xmlDoc.get('/methodCall/params/param/value/struct').childNodes()
 
-  if (methodName === 'available') {
+  const paramsRules = rules[methodName]
+  for (let [param, paramRules] of Object.entries(paramsRules)) {
 
-    response.params = {
-      maxMemory: getMemberValue(members, 'maxmemory', 'int')
-    }
-
-  } else if (methodName === 'request') {
-
-    response.params = {
-      maxTime: getMemberValue(members, 'maxtime', 'int'),
-      maxFileSize: getMemberValue(members, 'maxfilesize', 'int'),
-      maxMemory: getMemberValue(members, 'maxmemory', 'int'),
-      maxProcesses: getMemberValue(members, 'maxprocesses', 'int'),
-      userId: getMemberValue(members, 'userid'),
-      activityId: getMemberValue(members, 'activityid'),
-      execute: getMemberValue(members, 'execute'),
-      interactive: getMemberValue(members, 'interactive', 'int'),
-      lang: getMemberValue(members, 'lang'),
-      files: extractFiles(getMemberValue(members, 'files', 'struct').childNodes())
-    }
-
-  } else if (methodName === 'getresult') {
-
-    response.params = {
-      adminticket: getMemberValue(members, 'adminticket', 'string')
-    }
-
-  } else if (methodName === 'running') {
-
-    response.params = {
-      adminticket: getMemberValue(members, 'adminticket', 'string')
+    if (paramRules.template === 'files') {
+      response.params[param] = extractFiles(getMemberValue(members, param, 'struct').childNodes())
+    } else {
+      response.params[param] = getMemberValue(members, param, paramRules.template)
     }
 
   }

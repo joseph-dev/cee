@@ -34,7 +34,15 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
         const message = (Buffer.from(chunk)).toString()
         const chunkData = JSON.parse(message)
 
-        if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
+        // If the job was manually deleted ('stop' command)
+        if (chunkData.type === 'DELETED') {
+
+          responseToReturn.output = `CEE: execution was manually stopped`
+          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+          resolve(responseToReturn)
+
+        // If the execution succeeded or failed
+        } else if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
 
           const pod = await getPodForJob(jobName)
           let containerTerminationReason = null
@@ -58,17 +66,17 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
             responseToReturn.output = `CEE: out of time (${params.maxTime}s)`
           } else if (containerTerminationReason === "OOMKilled") {
             responseToReturn.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
-          } else if (containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
+          } else if (containerTerminationReason && containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
             responseToReturn.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
           }
 
-          redis.hsetnx(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
           resolve(responseToReturn)
         }
 
       } catch (e) {
 
-        redis.hsetnx(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+        await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
         resolve(responseToReturn)
         console.log(e) // @TODO implement error logging
 
@@ -78,7 +86,7 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
   } catch (e) {
 
-    redis.hsetnx(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+    await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
     resolve(responseToReturn)
     console.log(e) // @TODO implement error logging
 

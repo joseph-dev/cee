@@ -3,6 +3,7 @@ const handlers = {
   available: require('./handlers/available'),
   getresult: require('./handlers/getResult'),
   running: require('./handlers/running'),
+  stop: require('./handlers/stop'),
 }
 
 module.exports = async (request) => {
