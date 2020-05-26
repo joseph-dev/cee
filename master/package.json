@@ -17,6 +17,7 @@
     "isvalid": "^2.5.3",
     "libxmljs": "^0.19.7",
     "lodash": "^4.17.15",
+    "moment": "^2.26.0",
     "node": "^12.13.0",
     "random-number-csprng": "^1.0.2",
     "redis": "^2.8.0",
