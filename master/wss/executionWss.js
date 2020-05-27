@@ -3,7 +3,7 @@ const config = require('./../config')
 const redis = require('./../redis')
 const logger = require("../logger")
 const executeCode = require('../jobs/k8s/executeCode')
-const cleanUp = require('../jobs/redis/cleanUp')
+const cleanUpResult = require('../jobs/redis/cleanUpResult')
 const getJob = require('../jobs/k8s/getJob')
 
 // WebSocket for execution
@@ -42,7 +42,7 @@ executionWss.on('connection', async (ws) => {
     executeCode(requestId).then((executionResult) => {
       ws.send(executionResult.output)
       ws.close()
-      setTimeout(cleanUp, config.cee.executionResultTtl, requestId)
+      setTimeout(cleanUpResult, config.cee.executionResultTtl, requestId)
     })
 
   } catch (e) {

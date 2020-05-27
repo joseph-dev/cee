@@ -1,5 +1,5 @@
 const redis = require('../../../redis')
-const cleanUp = require('../../redis/cleanUp')
+const cleanUpResult = require('../../redis/cleanUpResult')
 
 module.exports = async (params) => {
 
@@ -28,7 +28,7 @@ module.exports = async (params) => {
   let executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
   if (executionResult) {
     executionResult = JSON.parse(executionResult)
-    cleanUp(requestId)
+    cleanUpResult(requestId)
     result.execution = executionResult.output
     result.executed = true
   }

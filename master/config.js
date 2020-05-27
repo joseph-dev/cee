@@ -4,6 +4,7 @@ module.exports = {
     securePort: parseInt(process.env.MASTER_SERVICE_SECURE_PORT) || 443,
   },
   cee: {
+    executionRequestTtl: parseInt(process.env.EXECUTION_REQUEST_TTL) || 60000, // ttl (milliseconds) for the request ot be stored if it's not executed
     executionResultTtl: parseInt(process.env.EXECUTION_RESULT_TTL) || 60000 // ttl (milliseconds) for the result ot be stored after interactive execution
   },
   executionParams: {
