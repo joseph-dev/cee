@@ -1,8 +1,9 @@
 const WebSocket = require('ws')
 const config = require('./../config')
 const redis = require('./../redis')
-const executeCode = require('../jobs/executeCode')
-const cleanUp = require('../jobs/cleanUp')
+const logger = require("../logger")
+const executeCode = require('../jobs/k8s/executeCode')
+const cleanUp = require('../jobs/redis/cleanUp')
 const getJob = require('../jobs/k8s/getJob')
 
 // WebSocket for execution
@@ -21,7 +22,7 @@ executionWss.on('connection', async (ws) => {
 
   // handling an error
   ws.on('error', (error) => {
-    console.log(error) // @TODO implement error logging
+    logger.error(error)
   })
 
   try {
@@ -47,7 +48,7 @@ executionWss.on('connection', async (ws) => {
   } catch (e) {
 
     ws.close()
-    console.log(e) // @TODO add logging
+    logger.error(e)
 
   }
 

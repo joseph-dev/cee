@@ -2,6 +2,7 @@ const url = require('url')
 const UrlPattern = require('url-pattern')
 const executionWss = require('./wss/executionWss')
 const redis = require('./redis')
+const logger = require('./logger')
 
 module.exports = async (request, socket, head) => {
 
@@ -42,7 +43,7 @@ module.exports = async (request, socket, head) => {
 
   } catch (e) {
 
-    console.log(e) // @TODO add logging
+    logger.error(e)
     socket.destroy()
 
   }

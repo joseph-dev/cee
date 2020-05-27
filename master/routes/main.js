@@ -1,6 +1,7 @@
 const analyzeXmlRequest = require('./../jobs/request/analyzeXmlRequest')
 const analyzeJsonRequest = require('./../jobs/request/analyzeJsonRequest')
 const execCommand = require('./../jobs/command/execCommand')
+const logger = require('./../logger')
 
 module.exports = async (req, res) => {
 
@@ -41,7 +42,7 @@ module.exports = async (req, res) => {
     }
 
   } catch (e) {
-    console.log(e) // @TODO add logging
+    logger.error(e)
     res.sendStatus(500)
   }
 

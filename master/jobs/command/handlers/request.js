@@ -1,8 +1,8 @@
 const config = require('../../../config')
 const redis = require('../../../redis')
 const moment = require('moment')
-const executeCode = require('../../executeCode')
-const cleanUp = require('../../cleanUp')
+const executeCode = require('../../k8s/executeCode')
+const cleanUp = require('../../redis/cleanUp')
 const randomNumber = require("random-number-csprng")
 
 module.exports = async (params) => {

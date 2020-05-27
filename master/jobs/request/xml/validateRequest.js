@@ -1,6 +1,7 @@
 const libxmljs = require("libxmljs")
 const rules = require("./rules")
 const fs = require('fs')
+const {RedisError} = require('redis')
 
 module.exports = async (xmlDoc) => {
 
@@ -43,6 +44,9 @@ module.exports = async (xmlDoc) => {
       try {
         await memberRules.post(extractData(memberDoc, memberRules.template))
       } catch (e) {
+        if (e instanceof RedisError) {
+          throw e
+        }
         response.errors.push(e)
         return response
       }

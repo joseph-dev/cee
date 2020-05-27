@@ -55,7 +55,8 @@ let execute = async (requestId) => {
 
   } catch (e) {
 
-    result.success = false // @TODO add logging
+    console.log(e)
+    result.success = false
 
   } finally {
 

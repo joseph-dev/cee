@@ -1,13 +1,14 @@
 const redis = require("redis")
+const logger = require("./logger")
 const {promisify} = require('util');
 const client = redis.createClient(process.env.REDIS_SERVICE_PORT, process.env.REDIS_SERVICE_HOST)
 
 client.on('error', function (err) {
-  console.log(err) //@TODO add proper logging
+  logger.error(err)
 });
 
 client.on('connect', function () {
-  console.log('Connected to the Redis server')
+  logger.info('Connected to the Redis server')
 });
 
 client.REQUEST_SET = 'requests'

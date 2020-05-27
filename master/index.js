@@ -2,6 +2,7 @@ const http = require('http')
 const express = require('express')
 const bodyParser = require('body-parser')
 const path = require('path')
+const logger = require('./logger')
 
 // Other imports
 const isRunnerSupported = require('./middlewares/isRunnerSupported')
@@ -43,4 +44,4 @@ app.use((req, res, next) => {
 // Process http upgrade request
 server.on('upgrade', upgradeRequest)
 
-server.listen(port, () => console.log(`Example app listening on port ${port}!`))
+server.listen(port, () => logger.info(`CEE is listening on port ${port}!`))

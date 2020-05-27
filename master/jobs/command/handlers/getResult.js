@@ -1,5 +1,5 @@
 const redis = require('../../../redis')
-const cleanUp = require('../../cleanUp')
+const cleanUp = require('../../redis/cleanUp')
 
 module.exports = async (params) => {
 

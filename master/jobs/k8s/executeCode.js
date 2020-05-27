@@ -1,8 +1,9 @@
-const redis = require('../redis')
+const redis = require('../../redis')
+const logger = require('../../logger')
 const xbytes = require('xbytes')
-const createJob = require('../jobs/k8s/createJob')
-const watchJob = require('../jobs/k8s/watchJob')
-const getPodForJob = require('./k8s/getPodForJob')
+const createJob = require('./createJob')
+const watchJob = require('./watchJob')
+const getPodForJob = require('./getPodForJob')
 
 module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
@@ -78,7 +79,7 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
         await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
         resolve(responseToReturn)
-        console.log(e) // @TODO implement error logging
+        logger.error(e)
 
       }
 
@@ -88,7 +89,7 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
     await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
     resolve(responseToReturn)
-    console.log(e) // @TODO implement error logging
+    logger.error(e)
 
   }
 

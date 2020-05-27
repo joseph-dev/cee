@@ -3,7 +3,7 @@ const {promisify} = require('util');
 const client = redis.createClient(process.env.REDIS_SERVICE_PORT, process.env.REDIS_SERVICE_HOST)
 
 client.on('error', function (err) {
-  console.log('Error ' + err) //@TODO add proper logging
+  console.log(err)
 });
 
 client.on('connect', function () {
