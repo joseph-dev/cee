@@ -2,11 +2,13 @@ const redis = require('../../redis')
 const logger = require('../../logger')
 const xbytes = require('xbytes')
 const createJob = require('./createJob')
+const deleteJob = require('./deleteJob')
 const watchJob = require('./watchJob')
 const getPodForJob = require('./getPodForJob')
 
 module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) => {
 
+  const jobName = `job-${requestId}`
   let responseToReturn = {
     success: false,
     output: `CEE: execution failed (unknown reason)`
@@ -21,7 +23,6 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
     }
 
     // Create a job
-    const jobName = `job-${requestId}`
     await createJob(jobName, requestId, params)
     monitorMessage(monitorWs, "job:created")
 
@@ -87,6 +88,7 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
 
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
           resolve(responseToReturn)
+          await deleteJob(jobName)
         }
 
       } catch (e) {
@@ -94,6 +96,7 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
         await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
         monitorMessage(monitorWs, "server:internal-error")
         resolve(responseToReturn)
+        await deleteJob(jobName)
         logger.error(e)
 
       }
@@ -105,6 +108,7 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
     await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
     monitorMessage("server:internal-error")
     resolve(responseToReturn)
+    await deleteJob(jobName)
     logger.error(e)
 
   }
