@@ -5,7 +5,7 @@ const createJob = require('./createJob')
 const watchJob = require('./watchJob')
 const getPodForJob = require('./getPodForJob')
 
-module.exports = (requestId) => new Promise(async (resolve, reject) => {
+module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) => {
 
   let responseToReturn = {
     success: false,
@@ -23,9 +23,11 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
     // Create a job
     const jobName = `job-${requestId}`
     await createJob(jobName, requestId, params)
+    monitorMessage(monitorWs, "job:created")
 
     // Watch the created job
     const stream = await watchJob(jobName)
+    monitorMessage(monitorWs, "job:watching")
 
     // Process stream to see the changes
     stream.on('data', async (chunk) => {
@@ -40,7 +42,13 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
           responseToReturn.output = `CEE: execution was manually stopped`
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+          monitorMessage(monitorWs, "execution:stopped")
           resolve(responseToReturn)
+
+        // If the execution started
+        } else if (chunkData.object.status.active) {
+
+          monitorMessage(monitorWs, "execution:started")
 
         // If the execution succeeded or failed
         } else if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
@@ -63,12 +71,18 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
 
           if (result) {
             responseToReturn = result
+            monitorMessage(monitorWs, "execution:finished")
           } else if (outOfTime) {
             responseToReturn.output = `CEE: out of time (${params.maxTime}s)`
+            monitorMessage(monitorWs, "execution:failed:out-of-time")
           } else if (containerTerminationReason === "OOMKilled") {
             responseToReturn.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
+            monitorMessage(monitorWs, "execution:failed:out-of-memory")
           } else if (containerTerminationReason && containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
             responseToReturn.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
+            monitorMessage(monitorWs, "execution:failed:out-of-storage")
+          } else {
+            monitorMessage(monitorWs, "execution:failed:unknown-reason")
           }
 
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
@@ -78,6 +92,7 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
       } catch (e) {
 
         await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+        monitorMessage(monitorWs, "server:internal-error")
         resolve(responseToReturn)
         logger.error(e)
 
@@ -88,9 +103,16 @@ module.exports = (requestId) => new Promise(async (resolve, reject) => {
   } catch (e) {
 
     await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+    monitorMessage("server:internal-error")
     resolve(responseToReturn)
     logger.error(e)
 
   }
 
 })
+
+const monitorMessage = (ws, message) => {
+  if (ws) {
+    ws.send(message)
+  }
+}

@@ -1,6 +1,7 @@
 const url = require('url')
 const UrlPattern = require('url-pattern')
 const executionWss = require('./wss/executionWss')
+const monitorWss = require('./wss/monitorWss')
 const redis = require('./redis')
 const logger = require('./logger')
 
@@ -29,13 +30,13 @@ module.exports = async (request, socket, head) => {
       }
 
       // if it's a "monitor" request and the ticket is valid
-      // if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
-      //   monitorWss.handleUpgrade(request, socket, head, (ws) => {
-      //     ws.monitorId = params.ticketId
-      //     monitorWss.emit('connection', ws, request)
-      //   })
-      //   return
-      // }
+      if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
+        monitorWss.handleUpgrade(request, socket, head, (ws) => {
+          ws.monitorId = params.ticketId
+          monitorWss.emit('connection', ws, request)
+        })
+        return
+      }
 
     }
 
