@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+    <params>
+        <param>
+            <struct>
+                <member>
+                    <name>adminticket</name>
+                    <value>
+                        <string>1097808577934</string>
+                    </value>
+                </member>
+                <member>
+                    <name>monitorticket</name>
+                    <value>
+                        <string>1101615534542</string>
+                    </value>
+                </member>
+                <member>
+                    <name>executionticket</name>
+                    <value>
+                        <string>1101520268196</string>
+                    </value>
+                </member>
+                <member>
+                    <name>port</name>
+                    <value>
+                        <int>80</int>
+                    </value>
+                </member>
+                <member>
+                    <name>secureport</name>
+                    <value>
+                        <int>443</int>
+                    </value>
+                </member>
+            </struct>
+        </param>
+    </params>
+</methodResponse>

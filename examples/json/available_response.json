@@ -1,0 +1,15 @@
+{
+    "status": "ready",
+    "load": 0,
+    "maxTime": 60,
+    "maxFileSize": 67108864,
+    "maxMemory": 67108864,
+    "maxProcesses": 64,
+    "securePort": 443,
+    "runners": [
+        "php7.1",
+        "php7.2",
+        "java8",
+        "java12"
+    ]
+}

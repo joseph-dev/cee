@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+<methodName>request</methodName>
+<params>
+ <param>
+  <value>
+   <struct>
+    <member>
+     <name>files</name>
+     <value>
+      <struct>
+        <member>
+       <name>test.php</name>
+       <value><string>&#60;?php echo 'Hello world!';</string></value>
+      </member>
+      <member>
+       <name>vpl_run.sh</name>
+       <value><string>#!/bin/sh
+echo &#34;php test.php&#34; &gt;&gt; vpl_execution
+chmod +x vpl_execution</string></value>
+      </member>
+      </struct>
+     </value>
+    </member>
+    <member>
+     <name>filestodelete</name>
+     <value>
+      <struct>
+      
+      </struct>
+     </value>
+    </member>
+    <member>
+     <name>maxtime</name>
+     <value>
+      <int>600</int>
+     </value>
+    </member>
+    <member>
+     <name>maxfilesize</name>
+     <value>
+      <int>67108864</int>
+     </value>
+    </member>
+    <member>
+     <name>maxmemory</name>
+     <value>
+      <int>67108864</int>
+     </value>
+    </member>
+    <member>
+     <name>maxprocesses</name>
+     <value>
+      <int>64</int>
+     </value>
+    </member>
+    <member>
+     <name>userid</name>
+     <value>
+      <string>2</string>
+     </value>
+    </member>
+    <member>
+     <name>activityid</name>
+     <value>
+      <string>1</string>
+     </value>
+    </member>
+    <member>
+     <name>execute</name>
+     <value>
+      <string>vpl_run.sh</string>
+     </value>
+    </member>
+    <member>
+     <name>interactive</name>
+     <value>
+      <int>1</int>
+     </value>
+    </member>
+    <member>
+     <name>lang</name>
+     <value>
+      <string>en_US.UTF-8</string>
+     </value>
+    </member>
+   </struct>
+  </value>
+ </param>
+</params>
+</methodCall>

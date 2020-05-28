@@ -1,0 +1,6 @@
+{
+    "command": "available",
+    "params": {
+        "maxMemory": 67108864
+    }
+}

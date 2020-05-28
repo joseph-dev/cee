@@ -1,0 +1,20 @@
+{
+    "command": "request",
+    "params": {
+        "maxTime": 60,
+        "maxFileSize": 67108864,
+        "maxMemory": 67108864,
+        "execute": "vpl_run.sh",
+        "interactive": true,
+        "files": [
+            {
+                "name": "test.php",
+                "content": "<?php echo 'Hello world!';"
+            },
+            {
+                "name": "vpl_run.sh",
+                "content": "#!/bin/sh\necho \"php test.php\" >> vpl_execution\nchmod +x vpl_execution"
+            }
+        ]
+    }
+}

@@ -42,7 +42,7 @@ This endpoints is for all the other commands supported by CEE (like checking if 
 HTTP:
  - `available` - http request for checking the service for availability of resources, current load and available runners
  - `request` - http request for submitting code for execution
- - `running` - http request for checking of the code is running at the moment
+ - `running` - http request for checking if the code is running at the moment
  - `getresult` - http request for getting execution result
  - `stop` - http request for stopping execution
  

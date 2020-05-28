@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+ <params>
+  <param>
+   <struct>
+    <member>
+     <name>compilation</name>
+     <value>
+      <string></string>
+     </value>
+    </member>
+    <member>
+     <name>execution</name>
+     <value>
+      <string>Hello world!</string>
+     </value>
+    </member>
+    <member>
+     <name>executed</name>
+     <value>
+      <int>1</int>
+     </value>
+    </member>
+    <member>
+     <name>interactive</name>
+     <value>
+      <int>0</int>
+     </value>
+    </member>
+   </struct>
+  </param>
+ </params>
+</methodResponse>
