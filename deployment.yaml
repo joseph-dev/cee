@@ -110,6 +110,7 @@
  spec:
    selector:
      app: redis-commander
+   type: LoadBalancer
    ports:
      - protocol: TCP
        port: 8081
