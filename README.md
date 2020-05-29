@@ -253,12 +253,12 @@ The websocket can be used only if `interactive` is `true`
     {
         "command": "running",
         "params": {
-            "adminticket": 1098912488326
+            "adminTicket": 1098912488326
         }
     }
     ```
    Params description
-   - `adminticket` - the admin ticket, it is part of the response from the server to the request of submitting code
+   - `adminTicket` - the admin ticket, it is part of the response from the server to the request of submitting code
  - RESPONSE
     ```json
     {
@@ -279,12 +279,12 @@ The websocket can be used only if `interactive` is `true`
     {
         "command": "getresult",
         "params": {
-            "adminticket": 1098912488326
+            "adminTicket": 1098912488326
         }
     }
     ```
    Params description
-   - `adminticket` - the admin ticket, it is part of the response from the server to the request of submitting code
+   - `adminTicket` - the admin ticket, it is part of the response from the server to the request of submitting code
  - RESPONSE
     ```json
     {
@@ -311,12 +311,12 @@ The websocket can be used only if `interactive` is `true`
     {
         "command": "stop",
         "params": {
-            "adminticket": 1098912488326
+            "adminTicket": 1098912488326
         }
     }
     ```
    Params description
-   - `adminticket` - the admin ticket, it is part of the response from the server to the request of submitting code
+   - `adminTicket` - the admin ticket, it is part of the response from the server to the request of submitting code
  - RESPONSE
     ```json
     {

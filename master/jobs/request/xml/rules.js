@@ -3,16 +3,16 @@ const redis = require('../../../redis')
 module.exports = {
 
   available: {
-    maxmemory: {template: 'int'}
+    maxmemory: {template: 'int', as: 'maxMemory'}
   },
 
   request: {
-    maxtime: {template: 'int'},
-    maxfilesize: {template: 'int'},
-    maxmemory: {template: 'int'},
-    maxprocesses: {template: 'int'},
-    userid: {template: 'string'},
-    activityid: {template: 'string'},
+    maxtime: {template: 'int', as: 'maxTime'},
+    maxfilesize: {template: 'int', as: 'maxFileSize'},
+    maxmemory: {template: 'int', as: 'maxMemory'},
+    maxprocesses: {template: 'int', as: 'maxProcesses'},
+    userid: {template: 'string', as: 'userId'},
+    activityid: {template: 'string', as: 'activityId'},
     execute: {template: 'string'},
     interactive: {template: 'int'},
     lang: {template: 'string'},
@@ -20,27 +20,27 @@ module.exports = {
   },
 
   getresult: {
-    adminticket: {template: 'string', post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminticket: {template: 'string', as: 'adminTicket', post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     },
   },
 
   running: {
-    adminticket: {template: 'string', post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminticket: {template: 'string', as: 'adminTicket', post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     },
   },
 
   stop: {
-    adminticket: {template: 'string', post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminticket: {template: 'string', as: 'adminTicket', post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     },

@@ -23,27 +23,27 @@ module.exports = {
   },
 
   getresult: {
-    adminticket: {type: Number, required: true, post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminTicket: {type: Number, required: true, post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     }
   },
 
   running: {
-    adminticket: {type: Number, required: true, post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminTicket: {type: Number, required: true, post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     }
   },
 
   stop: {
-    adminticket: {type: Number, required: true, post: async (adminticket) => {
-        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminticket)) {
-          throw new Error("The adminticket is not valid.")
+    adminTicket: {type: Number, required: true, post: async (adminTicket) => {
+        if (! await redis.hExistsAsync(redis.ADMIN_TICKET_SET, adminTicket)) {
+          throw new Error("The admin ticket is not valid.")
         }
       }
     }

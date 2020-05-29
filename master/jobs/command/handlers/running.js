@@ -8,9 +8,9 @@ module.exports = async (params) => {
   }
 
   // Get Request ID for the Admin Ticket
-  const requestId = await redis.hGetAsync(redis.ADMIN_TICKET_SET, params.adminticket)
+  const requestId = await redis.hGetAsync(redis.ADMIN_TICKET_SET, params.adminTicket)
   if (! requestId) {
-    throw new Error("The adminticket is not valid.")
+    throw new Error("The admin ticket is not valid.")
   }
 
   // Get job and check its status

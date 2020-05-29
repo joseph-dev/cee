@@ -13,10 +13,11 @@ module.exports = function (xmlDoc){
   const paramsRules = rules[methodName]
   for (let [param, paramRules] of Object.entries(paramsRules)) {
 
+    let paramName = paramRules.as ? paramRules.as : param
     if (paramRules.template === 'files') {
-      response.params[param] = extractFiles(getMemberValue(members, param, 'struct').childNodes())
+      response.params[paramName] = extractFiles(getMemberValue(members, param, 'struct').childNodes())
     } else {
-      response.params[param] = getMemberValue(members, param, paramRules.template)
+      response.params[paramName] = getMemberValue(members, param, paramRules.template)
     }
 
   }
