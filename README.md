@@ -97,7 +97,7 @@ ws[s]://{domain_name/ip_address}/{execution_ticket}/execute
 
 Monitor websocket URI:
 ```http request
-ws[s]://{domain_name/ip_address}/{execution_ticket}/monitor
+ws[s]://{domain_name/ip_address}/{monitor_ticket}/monitor
 ```
 
 ## Examples
@@ -329,6 +329,23 @@ The websocket can be used only if `interactive` is `true`
 ## Configuring
 
 For configuration, environment variables should be used that can be set in the `deployment.yaml` file.
+
+Environment variables for the `yosypmykhailiv/cee-master` container:
+
+ - `KUBERNETES_NAMESPACE` - the namespace that should be used for running [jobs](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
+ - `RUNNER_IMAGE` - runner image name like `yosypmykhailiv/cee-runner`, don't include version since it will be concatenated automatically based on the runner used (a version tag is a runner name)
+ - `RUNNERS` - comma separated list of supported runners (version tags) like `php7.1, php7.2, java8, java12`, each runner name should match the `RUNNER_IMAGE` version tag
+ - `EXECUTION_REQUEST_TTL` - the maximum amount of time (milliseconds, 60000 - for 60 seconds) the request will be available for execution after submission (used only for interactive requests)
+ - `EXECUTION_RESULT_TTL` - the maximum amount of time (milliseconds, 60000 - for 60 seconds) the result of execution will be available after the execution is finished
+
+Available execution environments.
+
+Since each request is executed in a separate container, there must be an image that has the needed version of java, php or whatever you need.
+So every time you need a support for a new environment you have to build a new container and push it to the runner repository with a proper tag version, for example `php7.1` for PHP 7.1.
+After the image is pushed, the version tag (runner name) should be added to the list of available runners using the `RUNNERS` environment variable.
+The env-specific image should be built based on the image with the `latest` version tag in order to have all the scripts that provide support for communication between the master and a runner containers.
+It basically should only add the environment specific packages, like the needed for execution programming language.
+Check the `docker/images/runner` folder to see the examples of Docker files that have already been used for creating the existing runners.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
