@@ -135,7 +135,7 @@
 # Role management
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: job-handler
   namespace: cee
@@ -148,13 +148,13 @@ rules:
     verbs: [ "create", "get", "list", "watch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: default-job-handler
   namespace: cee
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: job-handler
 subjects:
   - kind: ServiceAccount
