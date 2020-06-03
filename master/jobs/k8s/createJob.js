@@ -35,7 +35,8 @@ module.exports = async (jobName, requestId, params) => {
             }
           ],
           restartPolicy: "Never",
-          terminationGracePeriodSeconds: 0
+          terminationGracePeriodSeconds: 0,
+          serviceAccountName: "runner"
         }
       },
       backoffLimit: 0,

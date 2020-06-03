@@ -1,143 +1,36 @@
 # Namespaces
 ---
- apiVersion: v1
- kind: Namespace
- metadata:
-   name: cee
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cee
 
 
 
-# Deployments
+# Service accounts
 ---
- apiVersion: apps/v1
- kind: Deployment
- metadata:
-   name: redis
-   namespace: cee
- spec:
-   replicas: 1
-   selector:
-     matchLabels:
-       app: redis
-   template:
-     metadata:
-       labels:
-         app: redis
-     spec:
-       containers:
-         - name: redis
-           image: redis
-           ports:
-             - containerPort: 6379
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: master
+  namespace: cee
+automountServiceAccountToken: true
 
 ---
- apiVersion: apps/v1
- kind: Deployment
- metadata:
-   name: redis-commander
-   namespace: cee
- spec:
-   replicas: 1
-   selector:
-     matchLabels:
-       app: redis-commander
-   template:
-     metadata:
-       labels:
-         app: redis-commander
-     spec:
-       containers:
-         - name: redis-commander
-           image: rediscommander/redis-commander:latest
-           env:
-             - name: REDIS_HOSTS
-               value: redis
-           ports:
-             - containerPort: 8081
-
----
- apiVersion: apps/v1
- kind: Deployment
- metadata:
-   name: master
-   namespace: cee
- spec:
-   replicas: 1
-   selector:
-     matchLabels:
-       app: master
-   template:
-     metadata:
-       labels:
-         app: master
-     spec:
-       containers:
-         - name: master
-           image: yosypmykhailiv/cee-master
-           env:
-             - name: KUBERNETES_NAMESPACE
-               value: "cee"
-             - name: RUNNERS
-               value: "php7.1, php7.2, java8, java12"
-             - name: RUNNER_IMAGE
-               value: "yosypmykhailiv/cee-runner"
-           ports:
-             - containerPort: 3000
-
-
-
-# Services
----
- apiVersion: v1
- kind: Service
- metadata:
-   name: redis
-   namespace: cee
- spec:
-   selector:
-     app: redis
-   ports:
-     - protocol: TCP
-       port: 6379
-       targetPort: 6379
-
----
- apiVersion: v1
- kind: Service
- metadata:
-   name: redis-commander
-   namespace: cee
- spec:
-   selector:
-     app: redis-commander
-   ports:
-     - protocol: TCP
-       port: 8081
-       targetPort: 8081
-
----
- apiVersion: v1
- kind: Service
- metadata:
-   name: master
-   namespace: cee
- spec:
-   selector:
-     app: master
-   type: LoadBalancer
-   ports:
-     - protocol: TCP
-       port: 80
-       targetPort: 3000
-
-
+# The 'runner' service account cannot be renamed or removed since it's used by master when creating jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: runner
+  namespace: cee
+automountServiceAccountToken: false
 
 # Role management
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: job-handler
+  name: master
   namespace: cee
 rules:
   - apiGroups: [ "" ]
@@ -150,13 +43,141 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: default-job-handler
+  name: master
   namespace: cee
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: job-handler
+  name: master
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: master
     namespace: cee
+
+
+
+# Deployments
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: cee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: redis
+          ports:
+            - containerPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-commander
+  namespace: cee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-commander
+  template:
+    metadata:
+      labels:
+        app: redis-commander
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis-commander
+          image: rediscommander/redis-commander:latest
+          env:
+            - name: REDIS_HOSTS
+              value: redis
+          ports:
+            - containerPort: 8081
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master
+  namespace: cee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      serviceAccountName: master
+      containers:
+        - name: master
+          image: yosypmykhailiv/cee-master
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "cee"
+            - name: RUNNERS
+              value: "php7.1, php7.2, java8, java12"
+            - name: RUNNER_IMAGE
+              value: "yosypmykhailiv/cee-runner"
+          ports:
+            - containerPort: 3000
+
+
+
+# Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: cee
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-commander
+  namespace: cee
+spec:
+  selector:
+    app: redis-commander
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master
+  namespace: cee
+spec:
+  selector:
+    app: master
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
