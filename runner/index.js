@@ -15,9 +15,10 @@ let execute = async (requestId) => {
     output: ''
   }
 
-  let folderPath = sh.tempdir()
-
   try {
+
+    let folderPath = sh.tempdir()
+    let finalResult
 
     // get params from Redis
     const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, requestId)
@@ -38,12 +39,11 @@ let execute = async (requestId) => {
       throw new Error(`File "${params.execute}" doesn't exist`)
     }
     sh.chmod('u+x', params.execute)
-    sh.exec('./' + params.execute)
+    finalResult = sh.exec('./' + params.execute)
 
-    if (! sh.test('-e', EXECUTION_FILE)) {
-      throw new Error(`File "${EXECUTION_FILE}" doesn't exist`)
+    if (sh.test('-e', EXECUTION_FILE)) {
+      finalResult = sh.exec(`./${EXECUTION_FILE}`)
     }
-    const finalResult = sh.exec(`./${EXECUTION_FILE}`)
 
     if (finalResult.stdout) {
       result.output = finalResult.stdout
@@ -59,10 +59,6 @@ let execute = async (requestId) => {
     result.success = false
 
   } finally {
-
-    // delete unnecessary files and go back to the home dir
-    sh.rm('-rf', `${folderPath}/*`)
-    sh.cd('/app')
 
     // Set the result only if the request has not been processed yet and there is no other result in redis
     if (await redis.hExistsAsync(REDIS_REQUEST_SET, requestId)) {
