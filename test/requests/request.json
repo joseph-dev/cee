@@ -1,0 +1,20 @@
+{
+  "command": "request",
+  "params": {
+    "maxTime": <%- maxTime %>,
+    "maxFileSize": <%- maxFileSize %>,
+    "maxMemory": <%- maxMemory %>,
+    "execute": "vpl_run.sh",
+    "interactive": true,
+    "files": [
+      {
+        "name": "test.php",
+        "content": "<%- payload %>"
+      },
+      {
+        "name": "vpl_run.sh",
+        "content": "<%- entryPoint %>"
+      }
+    ]
+  }
+}

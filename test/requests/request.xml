@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+    <methodName>request</methodName>
+    <params>
+        <param>
+            <value>
+                <struct>
+                    <member>
+                        <name>files</name>
+                        <value>
+                            <struct>
+                                <member>
+                                    <name>test.php</name>
+                                    <value><string><%= payload %></string></value>
+                                </member>
+                                <member>
+                                    <name>vpl_run.sh</name>
+                                    <value><string><%= entryPoint %></string></value>
+                                </member>
+                            </struct>
+                        </value>
+                    </member>
+                    <member>
+                        <name>filestodelete</name>
+                        <value>
+                            <struct>
+
+                            </struct>
+                        </value>
+                    </member>
+                    <member>
+                        <name>maxtime</name>
+                        <value>
+                            <int><%= maxTime %></int>
+                        </value>
+                    </member>
+                    <member>
+                        <name>maxfilesize</name>
+                        <value>
+                            <int><%= maxFileSize %></int>
+                        </value>
+                    </member>
+                    <member>
+                        <name>maxmemory</name>
+                        <value>
+                            <int><%= maxMemory %></int>
+                        </value>
+                    </member>
+                    <member>
+                        <name>maxprocesses</name>
+                        <value>
+                            <int>64</int>
+                        </value>
+                    </member>
+                    <member>
+                        <name>userid</name>
+                        <value>
+                            <string>2</string>
+                        </value>
+                    </member>
+                    <member>
+                        <name>activityid</name>
+                        <value>
+                            <string>1</string>
+                        </value>
+                    </member>
+                    <member>
+                        <name>execute</name>
+                        <value>
+                            <string>vpl_run.sh</string>
+                        </value>
+                    </member>
+                    <member>
+                        <name>interactive</name>
+                        <value>
+                            <int>1</int>
+                        </value>
+                    </member>
+                    <member>
+                        <name>lang</name>
+                        <value>
+                            <string>en_US.UTF-8</string>
+                        </value>
+                    </member>
+                </struct>
+            </value>
+        </param>
+    </params>
+</methodCall>

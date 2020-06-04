@@ -1,4 +1,10 @@
 .idea
-./master/node_modules
-./runner/node_modules
 .DS_Store
+
+/master/node_modules
+
+/runner/node_modules
+
+/test/node_modules
+/test/package-lock.json
+/test/.env
