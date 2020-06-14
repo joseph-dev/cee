@@ -115,7 +115,7 @@ spec:
             - name: RUNNER_IMAGE
               value: "yosypmykhailiv/cee-runner"
             - name: EXECUTION_TIME_LIMIT
-              value: 60
+              value: "60"
             - name: EXECUTION_MEMORY_LIMIT
               value: "67108864"
             - name: EXECUTION_STORAGE_LIMIT
