@@ -117,21 +117,21 @@ spec:
             - name: EXECUTION_TIME_LIMIT
               value: "60"
             - name: EXECUTION_MEMORY_LIMIT
-              value: "67108864"
+              value: "134217728"
             - name: EXECUTION_STORAGE_LIMIT
-              value: "67108864"
+              value: "134217728"
             - name: EXECUTION_CPU_REQUEST
-              value: "100m"
+              value: "250m"
             - name: EXECUTION_CPU_LIMIT
-              value: "200m"
+              value: "500m"
           ports:
             - containerPort: 3000
           resources:
             requests:
-              memory: "64Mi"
+              memory: "128Mi"
               cpu: "250m"
             limits:
-              memory: "128Mi"
+              memory: "256Mi"
               cpu: "500m"
 
 
