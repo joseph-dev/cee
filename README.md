@@ -14,8 +14,13 @@ The project is built using the following tools:
  
 ## Running
 
-To launch the service, the [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) should be installed and configured.
-The only command that needs to be executed is:
+Note: To launch the service, the [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) should be installed and configured.
+Steps to launch:
+- Copy `deployment_example.yaml` into `deployment.yaml` and adjust the deployment file if needed:
+```bash
+cp deployment_example.yaml deployment.yaml
+```
+- Run the command below to deploy the service
 ```bash
 kubectl apply -f deployment.yaml
 ```
@@ -337,6 +342,11 @@ Environment variables for the `yosypmykhailiv/cee-master` container:
  - `RUNNERS` - comma-separated list of supported runners (version tags) like `php7.1, php7.2, java8, java12`, each runner name should match the `RUNNER_IMAGE` version tag
  - `EXECUTION_REQUEST_TTL` - the maximum amount of time (milliseconds, 60000 - for 60 seconds) the request will be available for execution after submission (used only for interactive requests)
  - `EXECUTION_RESULT_TTL` - the maximum amount of time (milliseconds, 60000 - for 60 seconds) the result of execution will be available after the execution is finished
+ - `EXECUTION_TIME_LIMIT` - the maximum execution time (the max limit for the "maxTime" parameter being passed in the request)
+ - `EXECUTION_MEMORY_LIMIT` - the maximum memory usage (the max limit for the "maxMemory" parameter being passed in the request)
+ - `EXECUTION_STORAGE_LIMIT` - the maximum storage usage (the max limit for the "maxFileSize" parameter being passed in the request)
+ - `EXECUTION_CPU_REQUEST` - the requested amount of CPU ('100m' - 100 milli cores, 1 - one core, etc.)
+ - `EXECUTION_CPU_LIMIT` - the limit of CPU usage ('200m' - 200 milli cores, 2 - two core, etc.)
 
 Available execution environments.
 

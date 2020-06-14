@@ -8,17 +8,21 @@ module.exports = {
     executionResultTtl: parseInt(process.env.EXECUTION_RESULT_TTL) || 60000 // ttl (milliseconds) for the result ot be stored after interactive execution
   },
   executionParams: {
-    time: { // 1 to 60 seconds
+    time: { // DEFAULT: 1 to 60 seconds
       min: 1,
-      max: 60
+      max: process.env.EXECUTION_TIME_LIMIT || 60
     },
-    memory: { // 4 to 64 MiB
+    memory: { // DEFAULT: 4 to 64 MiB
       min: 4194304,
-      max: 67108864
+      max: process.env.EXECUTION_MEMORY_LIMIT || 67108864
     },
-    storage: { // 1 B to 64 MiB
+    storage: { // DEFAULT: 1 B to 64 MiB
       min: 1,
-      max: 67108864
+      max: process.env.EXECUTION_STORAGE_LIMIT || 67108864
+    },
+    cpu: { // DEFAULT: from '200 milli cores' to '200 milli cores' (format: 1 - one core, 500m - 0.5 core)
+      request: process.env.EXECUTION_CPU_REQUEST || '100m',
+      limit: process.env.EXECUTION_CPU_LIMIT || '200m'
     },
     processes: { // 1 to 64
       min: 1,

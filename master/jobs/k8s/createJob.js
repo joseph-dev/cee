@@ -1,4 +1,5 @@
 const k8s = require('../../k8s')
+const config = require('../../config')
 
 module.exports = async (jobName, requestId, params) => {
 
@@ -26,10 +27,12 @@ module.exports = async (jobName, requestId, params) => {
                 requests: {
                   "memory": params.maxMemory,
                   "ephemeral-storage": params.maxFileSize, // Requires 'LocalStorageCapacityIsolation' feature gate should be enabled
+                  "cpu": config.executionParams.cpu.request,
                 },
                 limits: {
                   "memory": params.maxMemory,
                   "ephemeral-storage": params.maxFileSize, // Requires 'LocalStorageCapacityIsolation' feature gate should be enabled
+                  "cpu": config.executionParams.cpu.limit,
                 }
               }
             }

@@ -79,32 +79,13 @@ spec:
           image: redis
           ports:
             - containerPort: 6379
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis-commander
-  namespace: cee
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis-commander
-  template:
-    metadata:
-      labels:
-        app: redis-commander
-    spec:
-      automountServiceAccountToken: false
-      containers:
-        - name: redis-commander
-          image: rediscommander/redis-commander:latest
-          env:
-            - name: REDIS_HOSTS
-              value: redis
-          ports:
-            - containerPort: 8081
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
 
 ---
 apiVersion: apps/v1
@@ -133,8 +114,25 @@ spec:
               value: "php7.1, php7.2, java8, java12"
             - name: RUNNER_IMAGE
               value: "yosypmykhailiv/cee-runner"
+            - name: EXECUTION_TIME_LIMIT
+              value: 60
+            - name: EXECUTION_MEMORY_LIMIT
+              value: "67108864"
+            - name: EXECUTION_STORAGE_LIMIT
+              value: "67108864"
+            - name: EXECUTION_CPU_REQUEST
+              value: "100m"
+            - name: EXECUTION_CPU_LIMIT
+              value: "200m"
           ports:
             - containerPort: 3000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
 
 
 
@@ -152,20 +150,6 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-commander
-  namespace: cee
-spec:
-  selector:
-    app: redis-commander
-  ports:
-    - protocol: TCP
-      port: 8081
-      targetPort: 8081
 
 ---
 apiVersion: v1
