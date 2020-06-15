@@ -111,7 +111,7 @@ spec:
             - name: KUBERNETES_NAMESPACE
               value: "cee"
             - name: RUNNERS
-              value: "php7.1, php7.2, java8, java12"
+              value: "php5.6, php7.1, php7.2, java8, java12"
             - name: RUNNER_IMAGE
               value: "yosypmykhailiv/cee-runner"
             - name: EXECUTION_TIME_LIMIT
