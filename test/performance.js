@@ -36,6 +36,8 @@ for (let i = 1; i <= process.env.NUMBER_OF_REQUESTS; i++) {
 
   setTimeout(() => {
 
+    const executionStart = process.hrtime()
+
     axios.post(executionUrl, executionRequestBody, {headers: {'Content-Type': contentType}}).then(async (response) => {
 
       // get execution ticket
@@ -53,7 +55,19 @@ for (let i = 1; i <= process.env.NUMBER_OF_REQUESTS; i++) {
       })
 
       ws.on('message', (data) => {
-        logger.info(data)
+
+        const executionEnd = process.hrtime(executionStart)
+
+        logger.info({
+          requestNumber: i,
+          result: data,
+          executionTime: executionEnd[0] + Math.floor(executionEnd[1] / 1000000) / 1000
+        })
+      })
+
+      ws.on('error', (e) => {
+        numberOfFinishedExecutions++
+        logger.error(e)
       })
 
       ws.on('close', () => {
