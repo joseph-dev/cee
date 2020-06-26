@@ -64,7 +64,7 @@ setInterval(() => {
     }
 
     ws.isAlive = false
-    ws.ping(null, false, true)
+    ws.ping(() => {})
   })
 }, 30000)
 
