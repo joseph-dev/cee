@@ -8,10 +8,26 @@ const prepareExecutionRequestBody = require('./helpers/prepareExecutionRequestBo
 const axios = require('axios').create({
   baseURL: process.env.APP_URL
 })
+
+const replaceErrors = (key, value) => {
+  if (value instanceof Buffer) {
+    return value.toString()
+  } else if (value instanceof Error) {
+    let error = {}
+
+    Object.getOwnPropertyNames(value).forEach(function (key) {
+      error[key] = value[key]
+    })
+
+    return error
+  }
+
+  return value
+}
 const logger = createLogger({
   format: format.combine(
     format.timestamp(),
-    format.json()
+    format.json({ replacer: replaceErrors })
   ),
   transports: [
     new transports.Console(),
