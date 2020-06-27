@@ -30,13 +30,29 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
     const stream = await watchJob(jobName)
     monitorMessage(monitorWs, "job:watching")
 
+    let previousChunk = '', chunkData
     // Process stream to see the changes
     stream.on('data', async (chunk) => {
 
       try {
 
-        const message = (Buffer.from(chunk)).toString()
-        const chunkData = JSON.parse(message)
+        const messages = ( previousChunk + (Buffer.from(chunk)).toString() ).replace(/\r/g, "").split(/\n/)
+
+        // Temporary fix for the issue of cut watch notification
+        try {
+
+          chunkData = JSON.parse(messages[0])
+          if (messages[1]) {
+            previousChunk = messages[1]
+          } else {
+            previousChunk = ''
+          }
+
+        } catch (e) {
+
+          previousChunk = messages[0]
+          return
+        }
 
         // If the job was manually deleted ('stop' command)
         if (chunkData.type === 'DELETED') {
@@ -89,6 +105,9 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
           resolve(responseToReturn)
           await deleteJob(jobName)
+          if (responseToReturn.output === 'CEE: execution failed (unknown reason)') {
+            console.log(responseToReturn.output)
+          }
         }
 
       } catch (e) {
@@ -98,6 +117,8 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
         resolve(responseToReturn)
         await deleteJob(jobName)
         logger.error(e)
+        console.log(e)
+        console.log((Buffer.from(chunk)).toString())
 
       }
 
@@ -110,6 +131,7 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
     resolve(responseToReturn)
     await deleteJob(jobName)
     logger.error(e)
+    console.log(e)
 
   }
 
