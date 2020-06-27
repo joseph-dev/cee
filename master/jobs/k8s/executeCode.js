@@ -104,10 +104,8 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
 
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
           resolve(responseToReturn)
+          stream.destroy()
           await deleteJob(jobName)
-          if (responseToReturn.output === 'CEE: execution failed (unknown reason)') {
-            console.log(responseToReturn.output)
-          }
         }
 
       } catch (e) {
@@ -115,10 +113,9 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
         await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
         monitorMessage(monitorWs, "server:internal-error")
         resolve(responseToReturn)
+        stream.destroy()
         await deleteJob(jobName)
         logger.error(e)
-        console.log(e)
-        console.log((Buffer.from(chunk)).toString())
 
       }
 
@@ -131,7 +128,6 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
     resolve(responseToReturn)
     await deleteJob(jobName)
     logger.error(e)
-    console.log(e)
 
   }
 
