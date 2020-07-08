@@ -18,6 +18,7 @@ module.exports = async (jobName, requestId, params) => {
             {
               name: jobName,
               image: `${process.env.RUNNER_IMAGE}:${params.runner}`,
+              imagePullPolicy: 'Always',
               command: [
                 "node",
                 "index.js",
