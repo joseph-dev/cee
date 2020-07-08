@@ -1,21 +1,21 @@
 const config = require('../../../config')
 const runners = require('../../../runners')
 const getNodes = require('../../k8s/getNodes')
-const getJobs = require('../../k8s/getJobs')
+const getPods = require('../../k8s/getPods')
 const xbytes = require('xbytes')
 
 module.exports = async (params) => {
 
-  // Get info about all the nodes and jobs
+  // Get info about all the nodes and pods
   const nodes = await getNodes()
-  const jobs = await getJobs()
+  const pods = await getPods()
 
   let status = {
     ready: false,
     allocatableMemory: 0,
     allocatableStorage: 0,
   }
-  const jobsCount = jobs.length
+  const podsCount = pods.length
 
   for (const node of nodes) {
     // Get node allocatable resources
@@ -37,7 +37,7 @@ module.exports = async (params) => {
 
   return {
     status: status.ready ? 'ready' : 'busy',
-    load: jobsCount,
+    load: podsCount,
     maxTime: config.executionParams.time.max,
     maxFileSize: Math.min(config.executionParams.storage.max, status.allocatableStorage),
     maxMemory: Math.min(config.executionParams.memory.max, status.allocatableMemory),

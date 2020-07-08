@@ -1,33 +1,39 @@
 const sh = require('shelljs')
 const fs = require('fs')
+const pty = require('node-pty')
+const WebSocket = require('ws')
 const program = require('commander')
 const redis = require('./redis')
 
 const REDIS_REQUEST_SET = 'requests'
-const REDIS_RESULT_SET = 'results'
 const EXECUTION_FILE = 'vpl_execution'
 
-// Function for processing the execution
-let execute = async (requestId) => {
+// Create websocket server
+const wss = new WebSocket.Server({ port: process.env.PORT || 3000 })
 
-  let result = {
-    success: true,
-    output: ''
-  }
+// Process ws connections
+wss.on('connection', async (ws) => {
 
   try {
 
-    let folderPath = sh.tempdir()
-    let finalResult
+    // Declare and parse cli parameters
+    program.requiredOption("--request-id <id>", "Request ID", parseInt)
+    program.parse(process.argv)
+
+    if (isNaN(program.requestId)){
+      throw new Error(`Invalid value for '--request-id'`)
+    }
 
     // get params from Redis
-    const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, requestId)
+    const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, program.requestId)
     if (! paramsJson) {
       throw new Error(`Invalid request`)
     }
     const params = JSON.parse(paramsJson)
+    redis.quit()
 
     // write all of the files
+    let folderPath = sh.tempdir()
     for (let file of params.files) {
       fs.writeFileSync(`${folderPath}/${file.name}`, file.content)
     }
@@ -35,47 +41,53 @@ let execute = async (requestId) => {
     // change dir to where the files are and execute the needed files
     sh.cd(folderPath)
 
+    // execute the entry point
     if (! sh.test('-e', params.execute)) {
       throw new Error(`File "${params.execute}" doesn't exist`)
     }
     sh.chmod('u+x', params.execute)
-    finalResult = sh.exec('./' + params.execute)
+    sh.exec('./' + params.execute)
 
-    if (sh.test('-e', EXECUTION_FILE)) {
-      finalResult = sh.exec(`./${EXECUTION_FILE}`)
+    // execute the final script
+    if (! sh.test('-e', EXECUTION_FILE)) {
+      throw new Error(`File "${EXECUTION_FILE}" doesn't exist`)
     }
+    const executionProcess = pty.spawn(`${folderPath}/${EXECUTION_FILE}`, [], {})
 
-    if (finalResult.stdout) {
-      result.output = finalResult.stdout
-    }
+    // Process execution process events
+    executionProcess.on('data', (data) => {
+      ws.send(data)
+    })
 
-    if (finalResult.stderr) {
-      result.output = finalResult.stderr
-    }
+    executionProcess.on('error', (error) => {
+      console.log(error)
+    })
 
-  } catch (e) {
+    executionProcess.on('exit', (exitCode) => {
+      console.log(`Exit code: ${exitCode}`)
+      ws.close()
+      wss.close()
+    })
 
-    console.log(e)
-    result.success = false
+    // Process websocket events
+    ws.on('message', (message) => {
+      executionProcess.write(message)
+    })
 
-  } finally {
+    ws.on('close', () => {
+      executionProcess.kill(9)
+    })
 
-    // Set the result only if the request has not been processed yet and there is no other result in redis
-    if (await redis.hExistsAsync(REDIS_REQUEST_SET, requestId)) {
-      redis.hsetnx(REDIS_RESULT_SET, requestId, JSON.stringify(result))
-    }
-    redis.quit()
+    ws.on('error', () => {
+      executionProcess.kill(9)
+    })
+
+  } catch (error) {
+
+    ws.close()
+    wss.close()
+    console.log(error)
+
   }
 
-}
-
-// Declare and parse cl parameters
-program.requiredOption("--request-id <id>", "Request ID", parseInt)
-program.parse(process.argv)
-
-if (isNaN(program.requestId)){
-  throw new Error(`Invalid value for '--request-id'`)
-}
-
-// process
-execute(program.requestId)
+})

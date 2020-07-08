@@ -4,7 +4,7 @@ const redis = require('./../redis')
 const logger = require("../logger")
 const executeCode = require('../jobs/k8s/executeCode')
 const cleanUpResult = require('../jobs/redis/cleanUpResult')
-const getJob = require('../jobs/k8s/getJob')
+const getPod = require('../jobs/k8s/getPod')
 
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
@@ -32,13 +32,13 @@ executionWss.on('connection', async (ws) => {
       throw(`The monitorticket is not valid. (MONITOR_TICKET: ${ws.monitorId})`)
     }
 
-    const job = await getJob(`job-${requestId}`)
+    const pod = await getPod(`pod-${requestId}`)
     const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
-    if (job || executionResult) {
+    if (pod || executionResult) {
       throw(`The execution is being processed or has been processed already. (REQUEST_ID: ${requestId})`)
     }
 
-    executeCode(requestId, ws).then((executionResult) => {
+    executeCode(requestId).then((executionResult) => {
       ws.close()
       setTimeout(cleanUpResult, config.cee.executionResultTtl, requestId)
     })

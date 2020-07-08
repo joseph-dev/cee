@@ -1,10 +1,10 @@
 const k8s = require('../../k8s')
 
-module.exports = async (jobName) => {
+module.exports = async (podName) => {
 
   let data
 
-  const response = await k8s.axios.delete(`/apis/batch/v1/namespaces/${k8s.namespace}/jobs/${jobName}`, {
+  const response = await k8s.axios.delete(`/api/v1/namespaces/${k8s.namespace}/pods/${podName}`, {
     params: {
       propagationPolicy: 'Background'
     },

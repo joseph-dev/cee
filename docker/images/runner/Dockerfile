@@ -8,10 +8,15 @@ WORKDIR /app
 # Copy dependency files
 COPY runner/package*.json /app/
 
-# Install NodeJS
+# Install necessary packages
 RUN apt update \
-    && apt install -y curl \
-    && curl -sL https://deb.nodesource.com/setup_10.x | bash \
+    && apt install make \
+    && apt install python -y \
+    && apt install build-essential -y
+
+# Install NodeJS
+RUN apt install -y curl \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash \
     && apt -y install nodejs
 
 RUN apt update \

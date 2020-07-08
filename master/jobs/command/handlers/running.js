@@ -1,5 +1,5 @@
 const redis = require('../../../redis')
-const getJob = require('../../k8s/getJob')
+const getPod = require('../../k8s/getPod')
 
 module.exports = async (params) => {
 
@@ -13,9 +13,9 @@ module.exports = async (params) => {
     throw new Error("The admin ticket is not valid.")
   }
 
-  // Get job and check its status
-  const job = await getJob(`job-${requestId}`)
-  if (job && (!! job.status.active)) {
+  // Get pod and check its status
+  const pod = await getPod(`pod-${requestId}`)
+  if (pod && (!! pod.status.phase === 'Running')) {
     result.running = true
   }
 

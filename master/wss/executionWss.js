@@ -4,7 +4,7 @@ const redis = require('./../redis')
 const logger = require("../logger")
 const executeCode = require('../jobs/k8s/executeCode')
 const cleanUpResult = require('../jobs/redis/cleanUpResult')
-const getJob = require('../jobs/k8s/getJob')
+const getPod = require('../jobs/k8s/getPod')
 
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
@@ -16,15 +16,6 @@ executionWss.on('connection', async (ws) => {
     ws.isAlive = true
   })
 
-  // ignore incoming messages
-  ws.on('message', (message) => {
-  })
-
-  // handling an error
-  ws.on('error', (error) => {
-    logger.error(error)
-  })
-
   try {
 
     const requestId = await redis.hGetAsync(redis.EXECUTION_TICKET_SET, ws.executionId)
@@ -32,15 +23,13 @@ executionWss.on('connection', async (ws) => {
       throw(`The executionticket is not valid. (EXECUTION_TICKET: ${ws.executionId})`)
     }
 
-    const job = await getJob(`job-${requestId}`)
+    const pod = await getPod(`pod-${requestId}`)
     const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
-    if (job || executionResult) {
+    if (pod || executionResult) {
       throw(`The execution is being processed or has been processed already. (REQUEST_ID: ${requestId})`)
     }
 
-
-    executeCode(requestId).then((executionResult) => {
-      ws.send(executionResult.output)
+    executeCode(requestId, ws).then(() => {
       ws.close()
       setTimeout(cleanUpResult, config.cee.executionResultTtl, requestId)
     })

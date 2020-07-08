@@ -1,6 +1,6 @@
 const redis = require('../../redis')
 const logger = require('../../logger')
-const getJob = require('../k8s/getJob')
+const getPod = require('../k8s/getPod')
 
 module.exports = (requestId) => {
   redis.hget(redis.REQUEST_SET, requestId, async (error, params) => {
@@ -16,9 +16,9 @@ module.exports = (requestId) => {
 
     try {
 
-      const job = await getJob(`job-${requestId}`)
+      const pod = await getPod(`pod-${requestId}`)
       const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
-      if (job || executionResult) {
+      if (pod || executionResult) {
         return
       }
 

@@ -1,6 +1,6 @@
 const redis = require('../../../redis')
-const getJob = require('../../k8s/getJob')
-const deleteJob = require('../../k8s/deleteJob')
+const getPod = require('../../k8s/getPod')
+const deletePod = require('../../k8s/deletePod')
 
 module.exports = async (params) => {
 
@@ -14,11 +14,11 @@ module.exports = async (params) => {
     throw new Error("The admin ticket is not valid.")
   }
 
-  // Get job and check its status
-  const jobName = `job-${requestId}`
-  const job = await getJob(jobName)
-  if (job && (!! job.status.active)) {
-    if (await deleteJob(jobName)) {
+  // Get pod and check its status
+  const podName = `pod-${requestId}`
+  const pod = await getPod(podName)
+  if (pod && (!! pod.status.phase === 'Running')) {
+    if (await deletePod(podName)) {
       result.stop = true
     }
   }

@@ -1,15 +1,15 @@
 const redis = require('../../redis')
 const logger = require('../../logger')
 const xbytes = require('xbytes')
-const createJob = require('./createJob')
-const deleteJob = require('./deleteJob')
-const watchJob = require('./watchJob')
-const getPodForJob = require('./getPodForJob')
+const WebSocket = require('../../ws')
+const createPod = require('./createPod')
+const deletePod = require('./deletePod')
+const watchPod = require('./watchPod')
 
-module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) => {
+module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) => {
 
-  const jobName = `job-${requestId}`
-  let responseToReturn = {
+  const podName = `pod-${requestId}`
+  let executionResult = {
     success: false,
     output: `CEE: execution failed (unknown reason)`
   }
@@ -22,13 +22,13 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
       throw new Error(`No params found for the request with id "${requestId}"`)
     }
 
-    // Create a job
-    await createJob(jobName, requestId, params)
-    monitorMessage(monitorWs, "job:created")
+    // Create a pod
+    await createPod(podName, requestId, params)
+    monitorMessage("pod:created")
 
-    // Watch the created job
-    const stream = await watchJob(jobName)
-    monitorMessage(monitorWs, "job:watching")
+    // Watch the created pod
+    const stream = await watchPod(podName)
+    monitorMessage("pod:watching")
 
     let previousChunk = '', chunkData
     // Process stream to see the changes
@@ -36,41 +36,81 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
 
       try {
 
-        const messages = ( previousChunk + (Buffer.from(chunk)).toString() ).replace(/\r/g, "").split(/\n/)
-
         // Temporary fix for the issue of cut watch notification
+        const messages = ( previousChunk + (Buffer.from(chunk)).toString() ).replace(/\r/g, "").split(/\n/)
         try {
-
           chunkData = JSON.parse(messages[0])
           if (messages[1]) {
             previousChunk = messages[1]
           } else {
             previousChunk = ''
           }
-
         } catch (e) {
-
           previousChunk = messages[0]
           return
         }
+        const pod = chunkData.object
 
-        // If the job was manually deleted ('stop' command)
+        // If the pod was manually deleted ('stop' command)
         if (chunkData.type === 'DELETED') {
 
-          responseToReturn.output = `CEE: execution was manually stopped`
-          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
-          monitorMessage(monitorWs, "execution:stopped")
-          resolve(responseToReturn)
+          executionResult.output = `CEE: execution was manually stopped`
+          if (clientWs) {
+            clientWs.send(executionResult.output)
+          }
+          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
+          monitorMessage("execution:stopped")
+          resolve()
 
-        // If the execution started
-        } else if (chunkData.object.status.active) {
+          // If the execution started
+        } else if (pod.status.phase === 'Running') {
 
-          monitorMessage(monitorWs, "execution:started")
+          // Connect to the pod websocket to start execution
+          let podWs = new WebSocket(`ws://${pod.status.podIP}:3000`, { // @TODO move port number to env var
+            perMessageDeflate: false,
+            retryCount: 5,
+            reconnectInterval: 100
+          })
+          podWs.start()
 
-        // If the execution succeeded or failed
-        } else if (chunkData.object.status.succeeded || chunkData.object.status.failed) {
+          // Process the pod websocket events
+          podWs.on('connect', () => {
+            executionResult.output = ''
+            monitorMessage("execution:started")
+          })
+          podWs.on('message', (msg) => {
+            if (clientWs) {
+              clientWs.send(msg.toString())
+            }
+            executionResult.output += msg.toString()
+          })
+          podWs.on('destroy', async () => {
+            // don't close client socket now, it will be closed after the pod is terminated
+          })
+          podWs.on('error', (error) => {
+            logger.error(error)
+          })
 
-          const pod = await getPodForJob(jobName)
+          // Process the client websocket events
+          if (clientWs) {
+
+            clientWs.on('message', (msg) => {
+              executionResult.output += msg
+              podWs.send(msg)
+            })
+            clientWs.on('close', () => {
+              podWs.destroy()
+            })
+            clientWs.on('error', (error) => {
+              podWs.destroy()
+              logger.error(error)
+              resolve()
+            })
+          }
+
+          // If the execution succeeded or failed
+        } else if (['Succeeded', 'Failed'].includes(pod.status.phase)) {
+
           let containerTerminationReason = null
 
           // if there is info about pod status
@@ -83,38 +123,49 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
               containerTerminationReason = pod.status.message
             }
           }
-          const outOfTime = chunkData.object.status.conditions[0].reason === 'DeadlineExceeded'
-          const result = (containerTerminationReason === "Completed" && ! outOfTime) ? JSON.parse(await redis.hGetAsync(redis.RESULT_SET, requestId)) : null
+          const outOfTime = pod.status.conditions && pod.status.conditions[0].reason === 'DeadlineExceeded'
+          const finishedSuccessfully = containerTerminationReason === "Completed" && ! outOfTime
 
-          if (result) {
-            responseToReturn = result
-            monitorMessage(monitorWs, "execution:finished")
+          if (finishedSuccessfully) {
+            executionResult.success = true
+            monitorMessage("execution:finished")
+
           } else if (outOfTime) {
-            responseToReturn.output = `CEE: out of time (${params.maxTime}s)`
-            monitorMessage(monitorWs, "execution:failed:out-of-time")
+            executionResult.output = `CEE: out of time (${params.maxTime}s)`
+            monitorMessage("execution:failed:out-of-time")
+
           } else if (containerTerminationReason === "OOMKilled") {
-            responseToReturn.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
-            monitorMessage(monitorWs, "execution:failed:out-of-memory")
+            executionResult.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
+            monitorMessage("execution:failed:out-of-memory")
+
           } else if (containerTerminationReason && containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
-            responseToReturn.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
-            monitorMessage(monitorWs, "execution:failed:out-of-storage")
+            executionResult.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
+            monitorMessage("execution:failed:out-of-storage")
+
           } else {
-            monitorMessage(monitorWs, "execution:failed:unknown-reason")
+            monitorMessage("execution:failed:unknown-reason")
           }
 
-          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
-          resolve(responseToReturn)
+          if (clientWs && ! finishedSuccessfully) {
+            clientWs.send(executionResult.output)
+          }
+          await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
+          resolve()
           stream.destroy()
-          await deleteJob(jobName)
+          await deletePod(podName)
+
         }
 
       } catch (e) {
 
-        await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
-        monitorMessage(monitorWs, "server:internal-error")
-        resolve(responseToReturn)
+        if (clientWs) {
+          clientWs.send(executionResult.output)
+        }
+        await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
+        monitorMessage("server:internal-error")
+        resolve()
         stream.destroy()
-        await deleteJob(jobName)
+        await deletePod(podName)
         logger.error(e)
 
       }
@@ -123,18 +174,19 @@ module.exports = (requestId, monitorWs) => new Promise(async (resolve, reject) =
 
   } catch (e) {
 
-    await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(responseToReturn))
+    if (clientWs) {
+      clientWs.send(executionResult.output)
+    }
+    await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
     monitorMessage("server:internal-error")
-    resolve(responseToReturn)
-    await deleteJob(jobName)
+    resolve()
+    await deletePod(podName)
     logger.error(e)
 
   }
 
 })
 
-const monitorMessage = (ws, message) => {
-  if (ws) {
-    ws.send(message)
-  }
+const monitorMessage = (message) => {
+  // @TODO implement proper monitoring
 }
