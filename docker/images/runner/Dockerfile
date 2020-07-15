@@ -1,4 +1,5 @@
-FROM ubuntu:18.04
+#---------- STAGE 1 ----------#
+FROM ubuntu:18.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -19,6 +20,19 @@ RUN apt install -y curl \
     && curl -sL https://deb.nodesource.com/setup_12.x | bash \
     && apt -y install nodejs
 
+# Install dependencies
+RUN npm install
+
+#---------- STAGE 2 ----------#
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set working directory
+WORKDIR /app
+
+COPY --from=builder /app .
+
 RUN apt update \
     && apt install -y locales \
     && locale-gen "en_US.UTF-8"
@@ -26,8 +40,10 @@ ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
-# Install dependencies
-RUN npm install
+# Install NodeJS
+RUN apt install -y curl \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash \
+    && apt -y install nodejs
 
 # Copy existing application directory contents
 COPY ./runner /app
