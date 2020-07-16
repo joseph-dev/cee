@@ -23,10 +23,10 @@ module.exports = async (params) => {
 
   await redis.hSetAsync(redis.REQUEST_SET, requestId, JSON.stringify(params))
   await redis.hSetAsync(redis.ADMIN_TICKET_SET, adminTicketId, requestId)
+  await redis.hSetAsync(redis.MONITOR_TICKET_SET, monitorTicketId, requestId)
 
   if (params.interactive) {
     await redis.hSetAsync(redis.EXECUTION_TICKET_SET, executionTicketId, requestId)
-    await redis.hSetAsync(redis.MONITOR_TICKET_SET, monitorTicketId, requestId)
     setTimeout(cleanUpRequest, config.cee.executionRequestTtl, requestId)
   } else {
     executeCode(requestId).then((executionResult) => {

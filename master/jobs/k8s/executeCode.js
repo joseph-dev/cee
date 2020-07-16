@@ -1,3 +1,4 @@
+const config = require('../../config')
 const redis = require('../../redis')
 const logger = require('../../logger')
 const xbytes = require('xbytes')
@@ -9,6 +10,8 @@ const watchPod = require('./watchPod')
 module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) => {
 
   const podName = `pod-${requestId}`
+  const redisMonitor = redis.duplicate()
+
   let executionResult = {
     success: false,
     output: `CEE: execution failed (unknown reason)`
@@ -24,11 +27,11 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
 
     // Create a pod
     await createPod(podName, requestId, params)
-    monitorMessage("pod:created")
+    redisMonitor.publish(podName, "pod:created")
 
     // Watch the created pod
     const stream = await watchPod(podName)
-    monitorMessage("pod:watching")
+    redisMonitor.publish(podName, "pod:watching")
 
     let previousChunk = '', chunkData
     // Process stream to see the changes
@@ -59,14 +62,15 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
             clientWs.send(executionResult.output)
           }
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-          monitorMessage("execution:stopped")
+          redisMonitor.publish(podName, "execution:stopped")
+          redisMonitor.quit()
           resolve()
 
           // If the execution started
         } else if (pod.status.phase === 'Running') {
 
           // Connect to the pod websocket to start execution
-          let podWs = new WebSocket(`ws://${pod.status.podIP}:3000`, { // @TODO move port number to env var
+          let podWs = new WebSocket(`ws://${pod.status.podIP}:${config.network.runnerPort}`, {
             perMessageDeflate: false,
             retryCount: 5,
             reconnectInterval: 100
@@ -76,7 +80,7 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
           // Process the pod websocket events
           podWs.on('connect', () => {
             executionResult.output = ''
-            monitorMessage("execution:started")
+            redisMonitor.publish(podName, "execution:started")
           })
           podWs.on('message', (msg) => {
             if (clientWs) {
@@ -95,7 +99,6 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
           if (clientWs) {
 
             clientWs.on('message', (msg) => {
-              executionResult.output += msg
               podWs.send(msg)
             })
             clientWs.on('close', () => {
@@ -104,7 +107,6 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
             clientWs.on('error', (error) => {
               podWs.destroy()
               logger.error(error)
-              resolve()
             })
           }
 
@@ -123,36 +125,37 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
               containerTerminationReason = pod.status.message
             }
           }
-          const outOfTime = pod.status.conditions && pod.status.conditions[0].reason === 'DeadlineExceeded'
+          const outOfTime = pod.status.reason === 'DeadlineExceeded'
           const finishedSuccessfully = containerTerminationReason === "Completed" && ! outOfTime
 
           if (finishedSuccessfully) {
             executionResult.success = true
-            monitorMessage("execution:finished")
+            redisMonitor.publish(podName, "execution:finished")
 
           } else if (outOfTime) {
             executionResult.output = `CEE: out of time (${params.maxTime}s)`
-            monitorMessage("execution:failed:out-of-time")
+            redisMonitor.publish(podName, "execution:failed:out-of-time")
 
           } else if (containerTerminationReason === "OOMKilled") {
             executionResult.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
-            monitorMessage("execution:failed:out-of-memory")
+            redisMonitor.publish(podName, "execution:failed:out-of-memory")
 
           } else if (containerTerminationReason && containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
             executionResult.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
-            monitorMessage("execution:failed:out-of-storage")
+            redisMonitor.publish(podName, "execution:failed:out-of-storage")
 
           } else {
-            monitorMessage("execution:failed:unknown-reason")
+            redisMonitor.publish(podName, "execution:failed:unknown-reason")
           }
 
           if (clientWs && ! finishedSuccessfully) {
             clientWs.send(executionResult.output)
           }
+          stream.destroy()
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
           resolve()
-          stream.destroy()
           await deletePod(podName)
+          redisMonitor.quit()
 
         }
 
@@ -161,11 +164,12 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
         if (clientWs) {
           clientWs.send(executionResult.output)
         }
-        await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-        monitorMessage("server:internal-error")
-        resolve()
         stream.destroy()
+        await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
+        redisMonitor.publish(podName, "server:internal-error")
+        resolve()
         await deletePod(podName)
+        redisMonitor.quit()
         logger.error(e)
 
       }
@@ -178,15 +182,12 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
       clientWs.send(executionResult.output)
     }
     await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-    monitorMessage("server:internal-error")
+    redisMonitor.publish(podName, "server:internal-error")
     resolve()
     await deletePod(podName)
+    redisMonitor.quit()
     logger.error(e)
 
   }
 
 })
-
-const monitorMessage = (message) => {
-  // @TODO implement proper monitoring
-}

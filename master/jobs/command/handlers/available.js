@@ -1,21 +1,21 @@
 const config = require('../../../config')
 const runners = require('../../../runners')
 const getNodes = require('../../k8s/getNodes')
-const getPods = require('../../k8s/getPods')
+const getRunnerPods = require('../../k8s/getRunnerPods')
 const xbytes = require('xbytes')
 
 module.exports = async (params) => {
 
   // Get info about all the nodes and pods
   const nodes = await getNodes()
-  const pods = await getPods()
+  const runnerPods = await getRunnerPods()
 
   let status = {
     ready: false,
     allocatableMemory: 0,
     allocatableStorage: 0,
   }
-  const podsCount = pods.length
+  const podsCount = runnerPods.length
 
   for (const node of nodes) {
     // Get node allocatable resources

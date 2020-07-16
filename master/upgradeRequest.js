@@ -14,7 +14,7 @@ module.exports = async (request, socket, head) => {
   try {
 
     const pathname = url.parse(request.url).pathname
-    const pattern = new UrlPattern(/^\/([0-9]+)\/(execute)$/, ['ticketId', 'command'])
+    const pattern = new UrlPattern(/^\/([0-9]+)\/(execute|monitor)$/, ['ticketId', 'command'])
     const params = pattern.match(pathname)
 
     // proceed if the url is correct
@@ -30,13 +30,13 @@ module.exports = async (request, socket, head) => {
       }
 
       // if it's a "monitor" request and the ticket is valid
-      // if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
-      //   monitorWss.handleUpgrade(request, socket, head, (ws) => {
-      //     ws.monitorId = params.ticketId
-      //     monitorWss.emit('connection', ws, request)
-      //   })
-      //   return
-      // }
+      if (params.command === 'monitor' && await redis.hExistsAsync(redis.MONITOR_TICKET_SET, params.ticketId)) {
+        monitorWss.handleUpgrade(request, socket, head, (ws) => {
+          ws.monitorId = params.ticketId
+          monitorWss.emit('connection', ws, request)
+        })
+        return
+      }
 
     }
 

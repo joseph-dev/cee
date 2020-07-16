@@ -16,7 +16,8 @@ module.exports = (requestId) => {
 
     try {
 
-      const pod = await getPod(`pod-${requestId}`)
+      const podName = `pod-${requestId}`
+      const pod = await getPod(podName)
       const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
       if (pod || executionResult) {
         return
@@ -30,6 +31,10 @@ module.exports = (requestId) => {
 
       await redis.hDelAsync(redis.ADMIN_TICKET_SET, params.tickets.adminTicketId)
       await redis.hDelAsync(redis.REQUEST_SET, requestId)
+
+      const redisMonitor = redis.duplicate()
+      redisMonitor.publish(podName, 'execution:did-not-start')
+      redisMonitor.quit()
 
     } catch (e) {
 

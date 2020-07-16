@@ -1,10 +1,6 @@
 const WebSocket = require('ws')
-const config = require('./../config')
 const redis = require('./../redis')
 const logger = require("../logger")
-const executeCode = require('../jobs/k8s/executeCode')
-const cleanUpResult = require('../jobs/redis/cleanUpResult')
-const getPod = require('../jobs/k8s/getPod')
 
 // WebSocket for execution
 const executionWss = new WebSocket.Server({noServer: true})
@@ -25,27 +21,40 @@ executionWss.on('connection', async (ws) => {
     logger.error(error)
   })
 
+  const redisMonitor = redis.duplicate()
+
   try {
 
     const requestId = await redis.hGetAsync(redis.MONITOR_TICKET_SET, ws.monitorId)
     if (! requestId) {
-      throw(`The monitorticket is not valid. (MONITOR_TICKET: ${ws.monitorId})`)
+      throw new Error(`The monitorticket is not valid. (MONITOR_TICKET: ${ws.monitorId})`)
     }
 
-    const pod = await getPod(`pod-${requestId}`)
     const executionResult = await redis.hGetAsync(redis.RESULT_SET, requestId)
-    if (pod || executionResult) {
-      throw(`The execution is being processed or has been processed already. (REQUEST_ID: ${requestId})`)
+    if (executionResult) {
+      ws.send("execution:already-finished")
+      ws.close()
+      redisMonitor.quit()
+      return
     }
 
-    executeCode(requestId).then((executionResult) => {
-      ws.close()
-      setTimeout(cleanUpResult, config.cee.executionResultTtl, requestId)
+    redisMonitor.on('message', (channel, message) => {
+
+      ws.send(message)
+
+      if (message.match(/execution:(finished|stopped|failed|did-not-start).*/) || message === 'server:internal-error') {
+        redisMonitor.quit()
+        ws.close()
+      }
+
     })
+    redisMonitor.subscribe(`pod-${requestId}`)
+
 
   } catch (e) {
 
     ws.close()
+    redisMonitor.quit()
     logger.error(e)
 
   }

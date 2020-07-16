@@ -30,7 +30,6 @@ wss.on('connection', async (ws) => {
       throw new Error(`Invalid request`)
     }
     const params = JSON.parse(paramsJson)
-    redis.quit()
 
     // write all of the files
     let folderPath = sh.tempdir()
@@ -53,10 +52,12 @@ wss.on('connection', async (ws) => {
       throw new Error(`File "${EXECUTION_FILE}" doesn't exist`)
     }
     const executionProcess = pty.spawn(`${folderPath}/${EXECUTION_FILE}`, [], {})
+    redis.publish(`pod-${program.requestId}`, "terminal:launched")
 
     // Process execution process events
     executionProcess.on('data', (data) => {
       ws.send(data)
+      redis.publish(`pod-${program.requestId}`, "output:sent")
     })
 
     executionProcess.on('error', (error) => {
@@ -65,6 +66,8 @@ wss.on('connection', async (ws) => {
 
     executionProcess.on('exit', (exitCode) => {
       console.log(`Exit code: ${exitCode}`)
+      redis.publish(`pod-${program.requestId}`, "terminal:exited")
+      redis.quit()
       ws.close()
       wss.close()
     })
@@ -72,6 +75,7 @@ wss.on('connection', async (ws) => {
     // Process websocket events
     ws.on('message', (message) => {
       executionProcess.write(message)
+      redis.publish(`pod-${program.requestId}`, "input:received")
     })
 
     ws.on('close', () => {

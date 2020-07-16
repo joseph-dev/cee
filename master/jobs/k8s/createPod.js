@@ -7,7 +7,10 @@ module.exports = async (podName, requestId, params) => {
     apiVersion: "v1",
     kind: "Pod",
     metadata: {
-      name: podName
+      name: podName,
+      labels: {
+        app: "runner"
+      }
     },
     spec: {
       activeDeadlineSeconds: params.maxTime,
@@ -38,13 +41,12 @@ module.exports = async (podName, requestId, params) => {
           },
           ports: [
             {
-              containerPort: 3000 // @TODO set port through env var
+              containerPort: config.network.runnerPort
             }
           ]
         }
       ]
     }
-    // @TODO check if a finished pod can be automatically deleted
   }, {
     validateStatus: (status) => {
       return [200, 201, 202].includes(status)
