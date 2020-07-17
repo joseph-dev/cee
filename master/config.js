@@ -2,7 +2,6 @@ module.exports = {
   network: {
     port: parseInt(process.env.MASTER_SERVICE_PORT) || 80,
     securePort: parseInt(process.env.MASTER_SERVICE_SECURE_PORT) || 443,
-    runnerPort: parseInt(process.env.RUNNER_PORT) || 3000,
   },
   cee: {
     executionRequestTtl: parseInt(process.env.EXECUTION_REQUEST_TTL) || 60000, // ttl (milliseconds) for the request ot be stored if it's not executed

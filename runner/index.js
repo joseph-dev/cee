@@ -1,31 +1,32 @@
 const sh = require('shelljs')
 const fs = require('fs')
 const pty = require('node-pty')
-const WebSocket = require('ws')
 const program = require('commander')
 const redis = require('./redis')
 
 const REDIS_REQUEST_SET = 'requests'
 const EXECUTION_FILE = 'vpl_execution'
 
-// Create websocket server
-const wss = new WebSocket.Server({ port: process.env.PORT || 3000 })
+const IO_MESSAGE_TYPE_MESSAGE = 'message'
+const IO_MESSAGE_TYPE_COMMAND = 'command'
+const IO_COMMAND_FINISH = 'finish'
 
-// Process ws connections
-wss.on('connection', async (ws) => {
+const execute = async (requestId) => {
+
+  const executionEventsChannel = `pod-${requestId}-events`
+  const inputChannel = `pod-${requestId}-input`
+  const outputChannel = `pod-${requestId}-output`
+
+  const redisPublisher = redis.duplicate()
+  const redisSubscriber = redis.duplicate()
 
   try {
 
-    // Declare and parse cli parameters
-    program.requiredOption("--request-id <id>", "Request ID", parseInt)
-    program.parse(process.argv)
-
-    if (isNaN(program.requestId)){
-      throw new Error(`Invalid value for '--request-id'`)
-    }
+    redisPublisher.publish(executionEventsChannel, "execution:started")
 
     // get params from Redis
-    const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, program.requestId)
+    const paramsJson = await redis.hGetAsync(REDIS_REQUEST_SET, requestId)
+    redis.quit()
     if (! paramsJson) {
       throw new Error(`Invalid request`)
     }
@@ -51,13 +52,14 @@ wss.on('connection', async (ws) => {
     if (! sh.test('-e', EXECUTION_FILE)) {
       throw new Error(`File "${EXECUTION_FILE}" doesn't exist`)
     }
+
     const executionProcess = pty.spawn(`${folderPath}/${EXECUTION_FILE}`, [], {})
-    redis.publish(`pod-${program.requestId}`, "terminal:launched")
+    redisPublisher.publish(executionEventsChannel, "terminal:launched")
 
     // Process execution process events
     executionProcess.on('data', (data) => {
-      ws.send(data)
-      redis.publish(`pod-${program.requestId}`, "output:sent")
+      redisPublisher.publish(outputChannel, JSON.stringify({type: IO_MESSAGE_TYPE_MESSAGE, value: data}))
+      redisPublisher.publish(executionEventsChannel, "output:sent")
     })
 
     executionProcess.on('error', (error) => {
@@ -66,32 +68,44 @@ wss.on('connection', async (ws) => {
 
     executionProcess.on('exit', (exitCode) => {
       console.log(`Exit code: ${exitCode}`)
-      redis.publish(`pod-${program.requestId}`, "terminal:exited")
-      redis.quit()
-      ws.close()
-      wss.close()
+      redisPublisher.publish(outputChannel, JSON.stringify({type: IO_MESSAGE_TYPE_COMMAND, value: IO_COMMAND_FINISH}))
+      redisPublisher.publish(executionEventsChannel, "terminal:exited")
+      redisPublisher.quit()
+      redisSubscriber.quit()
     })
 
-    // Process websocket events
-    ws.on('message', (message) => {
-      executionProcess.write(message)
-      redis.publish(`pod-${program.requestId}`, "input:received")
+    // Process input channel messages
+    redisSubscriber.on('message', (channel, message) => {
+      const decodedMessage = JSON.parse(message)
+      if (decodedMessage.type === IO_MESSAGE_TYPE_COMMAND) {
+        if (decodedMessage.value === IO_COMMAND_FINISH) {
+          executionProcess.kill(9)
+        }
+      } else if (decodedMessage.type === IO_MESSAGE_TYPE_MESSAGE) {
+        executionProcess.write(decodedMessage.value)
+        redisPublisher.publish(executionEventsChannel, "input:received")
+      }
     })
-
-    ws.on('close', () => {
-      executionProcess.kill(9)
-    })
-
-    ws.on('error', () => {
-      executionProcess.kill(9)
-    })
+    redisSubscriber.subscribe(inputChannel)
 
   } catch (error) {
 
-    ws.close()
-    wss.close()
+    redis.quit()
+    redisPublisher.quit()
+    redisSubscriber.quit()
     console.log(error)
+    process.exit(1)
 
   }
 
-})
+}
+
+// Declare and parse cli parameters
+program.requiredOption("--request-id <id>", "Request ID", parseInt)
+program.parse(process.argv)
+
+if (isNaN(program.requestId)){
+  throw new Error(`Invalid value for '--request-id'`)
+}
+
+execute(program.requestId)

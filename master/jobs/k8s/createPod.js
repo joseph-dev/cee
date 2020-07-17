@@ -38,12 +38,7 @@ module.exports = async (podName, requestId, params) => {
               "ephemeral-storage": params.maxFileSize, // Requires 'LocalStorageCapacityIsolation' feature gate should be enabled
               "cpu": config.executionParams.cpu.limit,
             }
-          },
-          ports: [
-            {
-              containerPort: config.network.runnerPort
-            }
-          ]
+          }
         }
       ]
     }

@@ -17,7 +17,7 @@ module.exports = async (params) => {
   // Get pod and check its status
   const podName = `pod-${requestId}`
   const pod = await getPod(podName)
-  if (pod && (!! pod.status.phase === 'Running')) {
+  if (pod && pod.status.phase === 'Running') {
     if (await deletePod(podName)) {
       result.stop = true
     }

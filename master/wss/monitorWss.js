@@ -22,6 +22,7 @@ executionWss.on('connection', async (ws) => {
   })
 
   const redisMonitor = redis.duplicate()
+  const executionEventsChannel = `pod-${requestId}-events`
 
   try {
 
@@ -48,7 +49,7 @@ executionWss.on('connection', async (ws) => {
       }
 
     })
-    redisMonitor.subscribe(`pod-${requestId}`)
+    redisMonitor.subscribe(executionEventsChannel)
 
 
   } catch (e) {

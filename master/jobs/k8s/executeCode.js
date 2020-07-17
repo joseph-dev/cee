@@ -1,23 +1,69 @@
-const config = require('../../config')
 const redis = require('../../redis')
 const logger = require('../../logger')
 const xbytes = require('xbytes')
-const WebSocket = require('../../ws')
 const createPod = require('./createPod')
 const deletePod = require('./deletePod')
 const watchPod = require('./watchPod')
 
+const IO_MESSAGE_TYPE_MESSAGE = 'message'
+const IO_MESSAGE_TYPE_COMMAND = 'command'
+const IO_COMMAND_FINISH = 'finish'
+
 module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) => {
 
   const podName = `pod-${requestId}`
+
+  const executionEventsChannel = `${podName}-events`
+  const inputChannel = `${podName}-input`
+  const outputChannel = `${podName}-output`
+
   const redisMonitor = redis.duplicate()
+  const podInputRedis = redis.duplicate()
+  const podOutputRedis = redis.duplicate()
 
   let executionResult = {
     success: false,
-    output: `CEE: execution failed (unknown reason)`
+    output: ''
   }
 
   try {
+
+    // Setup processing of execution IO
+    podOutputRedis.on('message', (channel, message) => {
+      const decodedMessage = JSON.parse(message)
+      if (decodedMessage.type === IO_MESSAGE_TYPE_COMMAND) {
+        if (decodedMessage.value === IO_COMMAND_FINISH) {
+          podInputRedis.quit()
+          podOutputRedis.quit()
+        }
+      } else {
+        if (clientWs) {
+          clientWs.send(decodedMessage.value)
+        }
+        executionResult.output += decodedMessage.value
+      }
+    })
+    podOutputRedis.subscribe(outputChannel)
+
+    // Process the client websocket events
+    if (clientWs) {
+
+      clientWs.on('message', (message) => {
+        podInputRedis.publish(inputChannel, JSON.stringify({type: IO_MESSAGE_TYPE_MESSAGE, value: message}))
+      })
+      clientWs.on('close', () => {
+        if (podInputRedis.connected) {
+          podInputRedis.publish(inputChannel, JSON.stringify({type: IO_MESSAGE_TYPE_MESSAGE, value: IO_COMMAND_FINISH}))
+        }
+      })
+      clientWs.on('error', (error) => {
+        if (podInputRedis.connected) {
+          podInputRedis.publish(inputChannel, JSON.stringify({type: IO_MESSAGE_TYPE_MESSAGE, value: IO_COMMAND_FINISH}))
+        }
+        logger.error(error)
+      })
+    }
+
 
     // Get execution params
     const params = JSON.parse(await redis.hGetAsync(redis.REQUEST_SET, requestId))
@@ -27,11 +73,12 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
 
     // Create a pod
     await createPod(podName, requestId, params)
-    redisMonitor.publish(podName, "pod:created")
+    redisMonitor.publish(executionEventsChannel, "pod:created")
 
     // Watch the created pod
     const stream = await watchPod(podName)
-    redisMonitor.publish(podName, "pod:watching")
+    redisMonitor.publish(executionEventsChannel, "pod:watching")
+
 
     let previousChunk = '', chunkData
     // Process stream to see the changes
@@ -62,53 +109,9 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
             clientWs.send(executionResult.output)
           }
           await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-          redisMonitor.publish(podName, "execution:stopped")
+          redisMonitor.publish(executionEventsChannel, "execution:stopped")
           redisMonitor.quit()
           resolve()
-
-          // If the execution started
-        } else if (pod.status.phase === 'Running') {
-
-          // Connect to the pod websocket to start execution
-          let podWs = new WebSocket(`ws://${pod.status.podIP}:${config.network.runnerPort}`, {
-            perMessageDeflate: false,
-            retryCount: 5,
-            reconnectInterval: 100
-          })
-          podWs.start()
-
-          // Process the pod websocket events
-          podWs.on('connect', () => {
-            executionResult.output = ''
-            redisMonitor.publish(podName, "execution:started")
-          })
-          podWs.on('message', (msg) => {
-            if (clientWs) {
-              clientWs.send(msg.toString())
-            }
-            executionResult.output += msg.toString()
-          })
-          podWs.on('destroy', async () => {
-            // don't close client socket now, it will be closed after the pod is terminated
-          })
-          podWs.on('error', (error) => {
-            logger.error(error)
-          })
-
-          // Process the client websocket events
-          if (clientWs) {
-
-            clientWs.on('message', (msg) => {
-              podWs.send(msg)
-            })
-            clientWs.on('close', () => {
-              podWs.destroy()
-            })
-            clientWs.on('error', (error) => {
-              podWs.destroy()
-              logger.error(error)
-            })
-          }
 
           // If the execution succeeded or failed
         } else if (['Succeeded', 'Failed'].includes(pod.status.phase)) {
@@ -130,22 +133,23 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
 
           if (finishedSuccessfully) {
             executionResult.success = true
-            redisMonitor.publish(podName, "execution:finished")
+            redisMonitor.publish(executionEventsChannel, "execution:finished")
 
           } else if (outOfTime) {
             executionResult.output = `CEE: out of time (${params.maxTime}s)`
-            redisMonitor.publish(podName, "execution:failed:out-of-time")
+            redisMonitor.publish(executionEventsChannel, "execution:failed:out-of-time")
 
           } else if (containerTerminationReason === "OOMKilled") {
             executionResult.output = `CEE: out of memory (${xbytes(params.maxMemory, {iec: true})})`
-            redisMonitor.publish(podName, "execution:failed:out-of-memory")
+            redisMonitor.publish(executionEventsChannel, "execution:failed:out-of-memory")
 
           } else if (containerTerminationReason && containerTerminationReason.includes('ephemeral local storage usage exceeds')) {
             executionResult.output = `CEE: out of storage (${xbytes(params.maxFileSize, {iec: true})})`
-            redisMonitor.publish(podName, "execution:failed:out-of-storage")
+            redisMonitor.publish(executionEventsChannel, "execution:failed:out-of-storage")
 
           } else {
-            redisMonitor.publish(podName, "execution:failed:unknown-reason")
+            executionResult.output = `CEE: execution failed (unknown reason)`
+            redisMonitor.publish(executionEventsChannel, "execution:failed:unknown-reason")
           }
 
           if (clientWs && ! finishedSuccessfully) {
@@ -166,10 +170,12 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
         }
         stream.destroy()
         await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-        redisMonitor.publish(podName, "server:internal-error")
+        redisMonitor.publish(executionEventsChannel, "server:internal-error")
         resolve()
         await deletePod(podName)
         redisMonitor.quit()
+        podInputRedis.quit()
+        podOutputRedis.quit()
         logger.error(e)
 
       }
@@ -182,10 +188,12 @@ module.exports = (requestId, clientWs) => new Promise(async (resolve, reject) =>
       clientWs.send(executionResult.output)
     }
     await redis.hSetNxAsync(redis.RESULT_SET, requestId, JSON.stringify(executionResult))
-    redisMonitor.publish(podName, "server:internal-error")
+    redisMonitor.publish(executionEventsChannel, "server:internal-error")
     resolve()
     await deletePod(podName)
     redisMonitor.quit()
+    podInputRedis.quit()
+    podOutputRedis.quit()
     logger.error(e)
 
   }
