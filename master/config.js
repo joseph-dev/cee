@@ -5,7 +5,8 @@ module.exports = {
   },
   cee: {
     executionRequestTtl: parseInt(process.env.EXECUTION_REQUEST_TTL) || 60000, // ttl (milliseconds) for the request ot be stored if it's not executed
-    executionResultTtl: parseInt(process.env.EXECUTION_RESULT_TTL) || 60000 // ttl (milliseconds) for the result ot be stored after interactive execution
+    executionResultTtl: parseInt(process.env.EXECUTION_RESULT_TTL) || 60000, // ttl (milliseconds) for the result ot be stored after interactive execution
+    runnerPullPolicy: process.env.RUNNER_PULL_POLICY || 'IfNotPresent'
   },
   executionParams: {
     time: { // DEFAULT: 1 to 60 seconds

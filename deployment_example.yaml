@@ -114,6 +114,8 @@ spec:
               value: "php5.6, php7.1, php7.2, java8, java12"
             - name: RUNNER_IMAGE
               value: "yosypmykhailiv/cee-runner"
+            - name: RUNNER_PULL_POLICY
+              value: "IfNotPresent"
             - name: EXECUTION_TIME_LIMIT
               value: "60"
             - name: EXECUTION_MEMORY_LIMIT

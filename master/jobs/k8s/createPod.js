@@ -21,7 +21,7 @@ module.exports = async (podName, requestId, params) => {
         {
           name: podName,
           image: `${process.env.RUNNER_IMAGE}:${params.runner}`,
-          imagePullPolicy: 'Always',
+          imagePullPolicy: config.cee.runnerPullPolicy,
           command: [
             "node",
             "index.js",
