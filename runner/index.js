@@ -1,5 +1,6 @@
 const sh = require('shelljs')
-const fs = require('fs')
+const path = require('path')
+const fs = require('fs').promises
 const pty = require('node-pty')
 const program = require('commander')
 const redis = require('./redis')
@@ -35,7 +36,8 @@ const execute = async (requestId) => {
     // write all of the files
     let folderPath = sh.tempdir()
     for (let file of params.files) {
-      fs.writeFileSync(`${folderPath}/${file.name}`, file.content)
+      await fs.mkdir(path.dirname(`${folderPath}/${file.name}`), {recursive: true})
+      await fs.writeFile(`${folderPath}/${file.name}`, file.content)
     }
 
     // change dir to where the files are and execute the needed files
